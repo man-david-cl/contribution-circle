@@ -21,7 +21,7 @@ export function WithdrawalControls({enabled}:{enabled:boolean}){
  return <div>
   <div style={{display:'flex',alignItems:'center',gap:12,flexWrap:'wrap'}}>
    <span className="pill">{active?'Withdrawals enabled':'Withdrawals disabled'}</span>
-   <button type="button" className={active?'btn btn-danger':'btn btn-primary'} disabled={busy} onClick={toggle}>{busy?'Updating…':active?'Disable withdrawals':'Enable withdrawals'}</button>
+   <button type="button" className={active?'btn btn-danger':'btn btn-primary'} disabled={busy} aria-pressed={active} aria-busy={busy} onClick={toggle}>{busy?'Updating…':active?'Disable withdrawals':'Enable withdrawals'}</button>
   </div>
   {message&&<p className="muted" role="status" style={{fontSize:13,marginTop:10}}>{message}</p>}
  </div>;

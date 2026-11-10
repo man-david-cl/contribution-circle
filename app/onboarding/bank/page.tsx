@@ -119,6 +119,7 @@ export default function BankSetup() {
 
       setProfile(updatedDetails);
       setEditing(false);
+      window.location.href = '/dashboard';
     } catch {
       setError('Something went wrong while saving your bank details.');
     } finally {

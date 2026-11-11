@@ -22,8 +22,8 @@ export async function POST(){
    status:'pending',payment_reference:reference
   });
   if(insertError)return NextResponse.json({error:insertError.message},{status:400});
-  const origin=new URL(reqUrlSafe(), 'https://placeholder.invalid').origin;
-  const callbackUrl=(process.env.NEXT_PUBLIC_SITE_URL||origin)+'/deposit/paystack/callback';
+  const siteUrl=process.env.NEXT_PUBLIC_SITE_URL||(process.env.VERCEL_URL?'https://'+process.env.VERCEL_URL:'http://localhost:3000');
+  const callbackUrl=siteUrl.replace(/\\/$/,'')+'/deposit/paystack/callback';
   const response=await fetch('https://api.paystack.co/transaction/initialize',{
    method:'POST',headers:{Authorization:'Bearer '+secret,'Content-Type':'application/json'},
    body:JSON.stringify({email:user.email,amount:Math.round(amount*100),currency:'NGN',reference,callback_url:callbackUrl,metadata:{member_id:user.id,deposit_reference:reference,cycle_id:cycle.id}})
@@ -33,4 +33,3 @@ export async function POST(){
   return NextResponse.json({authorization_url:result.data.authorization_url,reference});
  }catch(e){return NextResponse.json({error:e instanceof Error?e.message:'Unable to initialize payment.'},{status:500});}
 }
-function reqUrlSafe(){return process.env.NEXT_PUBLIC_SITE_URL||'http://localhost:3000';}

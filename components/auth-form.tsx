@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase-browser';
 
@@ -11,6 +11,14 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
   const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState('');
   const [confirmationRequired, setConfirmationRequired] = useState(true);
+  const [emailSendFailed, setEmailSendFailed] = useState(false);
+
+  useEffect(() => {
+    if (!showEmailConfirmation) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = previousOverflow; };
+  }, [showEmailConfirmation]);
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -39,10 +47,21 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
           },
         });
 
-        if (signUpError) throw signUpError;
+        if (signUpError) {
+          const message = signUpError.message || '';
+          if (/rate limit|email.*send|sending.*email|too many requests/i.test(message)) {
+            setRegisteredEmail(email);
+            setConfirmationRequired(true);
+            setEmailSendFailed(true);
+            setShowEmailConfirmation(true);
+            return;
+          }
+          throw signUpError;
+        }
 
         setRegisteredEmail(email);
         setConfirmationRequired(!data.session);
+        setEmailSendFailed(false);
         setShowEmailConfirmation(true);
         form.reset();
         return;
@@ -50,7 +69,7 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
 
       const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
       if (signInError) throw signInError;
-      window.location.assign('/dashboard');
+      window.location.replace('/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
     } finally {
@@ -109,22 +128,22 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
       </form>
 
       {showEmailConfirmation && (
-        <div className="email-modal-backdrop" role="presentation">
+        <div className="email-modal-backdrop">
           <section className="email-modal" role="dialog" aria-modal="true" aria-labelledby="email-modal-title">
             <div className="email-modal-icon" aria-hidden="true">✉</div>
-            <p className="eyebrow">One more step</p>
-            <h2 id="email-modal-title">Confirm your email address</h2>
-            <p>{confirmationRequired ? "We've created your Contribution Circle account. Please open the confirmation email we sent to:" : "Your Contribution Circle account has been created successfully. You can continue to add your bank details."}</p>
-            {confirmationRequired && <>
-              <strong className="email-modal-address">{registeredEmail}</strong>
-              <p>Click the confirmation link in that email to activate your account. If you don't see it, check your spam or junk folder.</p>
-            </>}
-            <Link className="btn btn-primary email-modal-button" href={confirmationRequired ? "/login" : "/onboarding/bank"}>
-              {confirmationRequired ? "Continue to login" : "Continue to bank details"}
+            <p className="eyebrow">{emailSendFailed ? 'Email delivery delayed' : 'One more step'}</p>
+            <h2 id="email-modal-title">{emailSendFailed ? 'We could not send your confirmation email' : 'Confirm your email address'}</h2>
+            <p>{emailSendFailed
+              ? 'Supabase is temporarily limiting confirmation emails. Your registration may not have completed, so please do not keep submitting the form. Wait before trying again or contact the administrator.'
+              : confirmationRequired
+                ? "We've received your registration request. Open the confirmation email sent to:"
+                : 'Your Contribution Circle account has been created successfully. You can continue to add your bank details.'}</p>
+            {(confirmationRequired || emailSendFailed) && <strong className="email-modal-address">{registeredEmail}</strong>}
+            {!emailSendFailed && confirmationRequired && <p>Click the confirmation link to activate your account. Check your spam or junk folder if you cannot find it.</p>}
+            <Link className="btn btn-primary email-modal-button" href={emailSendFailed || confirmationRequired ? '/login' : '/onboarding/bank'}>
+              {emailSendFailed || confirmationRequired ? 'Go to login' : 'Continue to bank details'}
             </Link>
-            <button className="email-modal-close" type="button" onClick={() => setShowEmailConfirmation(false)}>
-              Close
-            </button>
+            <button className="email-modal-close" type="button" onClick={() => setShowEmailConfirmation(false)}>Close</button>
           </section>
         </div>
       )}

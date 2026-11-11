@@ -1,12 +1,19 @@
 'use client';
 import {useState} from 'react';
 
+async function readResponse(response: Response): Promise<any> {
+ const text = await response.text();
+ if (!text) return {error: `The server returned an empty response (HTTP ${response.status}). Please refresh and try again.`};
+ try { return JSON.parse(text); }
+ catch { return {error: `The server returned an invalid response (HTTP ${response.status}). Please refresh and try again.`}; }
+}
+
 export function WithdrawalControls({enabled,recipientName,positionNumber,hasRecipient}:{enabled:boolean;recipientName:string|null;positionNumber:number|null;hasRecipient:boolean}){
  const [active,setActive]=useState(enabled);
  const [busy,setBusy]=useState(false);
  const [message,setMessage]=useState('');
  async function toggle(){
-  if(!hasRecipient)return;
+  if(!hasRecipient||busy)return;
   const next=!active;
   const who=recipientName||'the next recipient';
   const prompt=next?'Enable the Withdraw button for '+who+' (position #'+positionNumber+') only?':'Disable withdrawal access for the current recipient?';
@@ -14,11 +21,13 @@ export function WithdrawalControls({enabled,recipientName,positionNumber,hasReci
   setBusy(true);setMessage('');
   try{
    const response=await fetch('/api/admin/settings',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({withdrawal_enabled:next})});
-   const result=await response.json();
-   if(!response.ok)throw new Error(result.error||'Unable to update withdrawal setting');
-   setActive(next);setMessage(next?'Withdraw is now enabled for '+who+' only.':'Withdrawal access has been disabled.');
-  }catch(error){setMessage(error instanceof Error?error.message:'An unexpected error occurred.');}
-  finally{setBusy(false);}
+   const result=await readResponse(response);
+   if(!response.ok)throw new Error(result.error||'Unable to update withdrawal setting.');
+   setActive(next);
+   setMessage(next?'Withdraw is now enabled for '+who+' only.':'Withdrawal access has been disabled.');
+  }catch(error){
+   setMessage(error instanceof Error?error.message:'An unexpected error occurred. Please try again.');
+  }finally{setBusy(false);}
  }
  return <div>
   <div style={{display:'flex',alignItems:'center',gap:12,flexWrap:'wrap'}}>

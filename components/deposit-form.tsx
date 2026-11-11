@@ -5,8 +5,8 @@ type Props={amount:number;bankName:string|null;accountName:string|null;accountNu
 export function DepositForm({amount,bankName,accountName,accountNumber,paystackEnabled}:Props){
  const [busy,setBusy]=useState(false);const [message,setMessage]=useState('');const [method,setMethod]=useState<'bank'|'online'>('bank');
  async function submitBank(e:React.FormEvent<HTMLFormElement>){
-  e.preventDefault();setBusy(true);setMessage('');
-  try{const form=new FormData(e.currentTarget);const r=await fetch('/api/deposits/bank-transfer',{method:'POST',body:form});const d=await r.json();if(!r.ok)throw new Error(d.error||'Deposit submission failed.');setMessage('Receipt submitted. Your deposit is pending administrator verification.');e.currentTarget.reset();}
+  e.preventDefault();const formElement=e.currentTarget;const form=new FormData(formElement);setBusy(true);setMessage('');
+  try{const r=await fetch('/api/deposits/bank-transfer',{method:'POST',body:form});const d=await r.json();if(!r.ok)throw new Error(d.error||'Deposit submission failed.');setMessage('Receipt submitted. Your deposit is pending administrator verification.');formElement.reset();}
   catch(err){setMessage(err instanceof Error?err.message:'Could not submit deposit.');}finally{setBusy(false);}
  }
  async function payOnline(){

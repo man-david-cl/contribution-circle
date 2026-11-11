@@ -2,6 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase-browser';
 
 type BankProfile = {
@@ -11,6 +12,7 @@ type BankProfile = {
 };
 
 export default function BankSetup() {
+  const router = useRouter();
   const [profile, setProfile] = useState<BankProfile | null>(null);
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -28,7 +30,7 @@ export default function BankSetup() {
       const { data: { user } } = await supabase.auth.getUser();
 
       if (!user) {
-        window.location.href = '/login';
+        router.replace('/login');
         return;
       }
 
@@ -119,7 +121,8 @@ export default function BankSetup() {
 
       setProfile(updatedDetails);
       setEditing(false);
-      window.location.href = '/dashboard';
+      router.replace('/dashboard');
+      router.refresh();
     } catch {
       setError('Something went wrong while saving your bank details.');
     } finally {

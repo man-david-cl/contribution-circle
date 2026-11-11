@@ -8,7 +8,7 @@ export async function POST(req:Request){
  const raw=await req.text();
  const signature=req.headers.get('x-paystack-signature')||'';
  const expected=crypto.createHmac('sha512',secret).update(raw).digest('hex');
- if(!signature||!crypto.timingSafeEqual(Buffer.from(signature),Buffer.from(expected)))return NextResponse.json({error:'Invalid signature'},{status:401});
+ if(!signature||signature.length!==expected.length||!crypto.timingSafeEqual(Buffer.from(signature),Buffer.from(expected)))return NextResponse.json({error:'Invalid signature'},{status:401});
  try{
   const event=JSON.parse(raw);
   if(event.event==='charge.success'){

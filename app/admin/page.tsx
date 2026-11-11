@@ -3,6 +3,7 @@ import Link from 'next/link';
 import {createClient} from '@/lib/supabase-server';
 import {AdminActions} from '@/components/admin-actions';
 import {WithdrawalControls} from '@/components/withdrawal-controls';
+import {OpenInitialCycle} from '@/components/open-initial-cycle';
 
 export default async function Admin(){
  const s=await createClient();
@@ -10,12 +11,13 @@ export default async function Admin(){
  if(!user)redirect('/login');
  const {data:p}=await s.from('profiles').select('role,full_name').eq('id',user.id).maybeSingle();
  if(p?.role!=='admin')redirect('/dashboard');
- const [{data:requests},{count:members},{data:settings},{data:current},{data:memberRows}] = await Promise.all([
+ const [{data:requests},{count:members},{data:settings},{data:current},{data:memberRows},{data:openCycle}] = await Promise.all([
   s.from('withdrawal_requests').select('id,status,created_at,member:profiles!withdrawal_requests_member_id_fkey(full_name)').order('created_at',{ascending:false}).limit(50),
   s.from('profiles').select('*',{count:'exact',head:true}),
-  s.from('group_settings').select('withdrawal_enabled').limit(1).maybeSingle(),
+  s.from('group_settings').select('withdrawal_enabled,contribution_amount,cycle_frequency').limit(1).maybeSingle(),
   s.rpc('admin_get_current_recipient'),
-  s.from('profiles').select('id,full_name,position_number,phone,bank_name,bank_account_name,bank_account_number,is_active,created_at').order('position_number',{ascending:true,nullsFirst:false})
+  s.from('profiles').select('id,full_name,position_number,phone,bank_name,bank_account_name,bank_account_number,is_active,created_at').order('position_number',{ascending:true,nullsFirst:false}),
+  s.from('contribution_cycles').select('id').in('status',['open','collecting']).limit(1).maybeSingle()
  ]);
  const recipient=Array.isArray(current)?current[0]:current;
  const withdrawalEnabled=settings?.withdrawal_enabled===true;
@@ -38,6 +40,7 @@ export default async function Admin(){
       <div className="recipient-grid"><div><small>Bank</small><strong>{recipient.bank_name||'Not provided'}</strong></div><div><small>Account name</small><strong>{recipient.bank_account_name||'Not provided'}</strong></div><div><small>Account number</small><strong>{recipient.bank_account_number||'Not provided'}</strong></div><div><small>Phone number</small><strong>{recipient.phone||'Not provided'}</strong></div></div>
      </>:<><h2 style={{fontSize:20}}>No next recipient is assigned</h2><p className="muted" style={{fontSize:13}}>Set up the group rotation and assign the next position before enabling withdrawals.</p></>}
     </section>
+    <OpenInitialCycle hasOpenCycle={Boolean(openCycle)} amount={settings?.contribution_amount??null} frequency={settings?.cycle_frequency??null} currentRecipient={recipient?.full_name||null}/>
     <section id="controls" className="card" style={{padding:20,marginBottom:18}}>
      <h3>Withdrawal access for this turn</h3><p className="muted" style={{fontSize:13}}>{recipient?'Enable the Withdraw button for '+(recipient.full_name||'the current recipient')+' at position #'+recipient.position_number+'. After payment is confirmed and the turn advances, access automatically switches off. You must enable it again for the next recipient.':'Withdrawal access stays unavailable until a next recipient is assigned.'}</p>
      <WithdrawalControls enabled={withdrawalEnabled} recipientName={recipient?.full_name||null} positionNumber={recipient?.position_number??null} hasRecipient={Boolean(recipient)}/>

@@ -22,7 +22,7 @@ export default async function Admin(){
  return <main className="container">
   <header className="nav"><Link href="/" className="brand">contribution<span>circle.</span></Link><span className="pill">Administrator</span></header>
   <div className="layout">
-   <aside className="sidebar card" style={{padding:15}}><div className="eyebrow" style={{padding:'8px 12px'}}>Admin workspace</div><nav className="menu"><Link className="active" href="/admin">Overview</Link><a href="#members">Members</a><a href="#recipient">Next recipient</a><a href="#controls">Withdrawal access</a><a href="#requests">Withdrawal requests</a></nav></aside>
+   <aside className="sidebar card" style={{padding:15}}><div className="eyebrow" style={{padding:'8px 12px'}}>Admin workspace</div><nav className="menu"><Link className="active" href="/admin">Overview</Link><a href="#members">Members</a><a href="#recipient">Next recipient</a><a href="#controls">Withdrawal access</a><a href="#requests">Withdrawal requests</a><Link href="/admin/deposits">Deposit management</Link></nav></aside>
    <section className="main">
     <div className="eyebrow">Control center</div><h1 style={{fontSize:30}}>Administrator dashboard</h1>
     <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(170px,1fr))',gap:13,margin:'20px 0'}}><div className="card stat"><span className="muted">Registered members</span><strong>{members??0}</strong></div><div className="card stat"><span className="muted">Withdrawal requests</span><strong>{requests?.length??0}</strong></div></div>

@@ -4,6 +4,7 @@ import {createClient} from '@/lib/supabase-server';
 import {AdminActions} from '@/components/admin-actions';
 import {WithdrawalControls} from '@/components/withdrawal-controls';
 import {OpenInitialCycle} from '@/components/open-initial-cycle';
+import {GroupContributionSettings} from '@/components/group-contribution-settings';
 
 export default async function Admin(){
  const s=await createClient();
@@ -40,6 +41,7 @@ export default async function Admin(){
       <div className="recipient-grid"><div><small>Bank</small><strong>{recipient.bank_name||'Not provided'}</strong></div><div><small>Account name</small><strong>{recipient.bank_account_name||'Not provided'}</strong></div><div><small>Account number</small><strong>{recipient.bank_account_number||'Not provided'}</strong></div><div><small>Phone number</small><strong>{recipient.phone||'Not provided'}</strong></div></div>
      </>:<><h2 style={{fontSize:20}}>No next recipient is assigned</h2><p className="muted" style={{fontSize:13}}>Set up the group rotation and assign the next position before enabling withdrawals.</p></>}
     </section>
+    <GroupContributionSettings initialAmount={settings?.contribution_amount??null}/>
     <OpenInitialCycle hasOpenCycle={Boolean(openCycle)} amount={settings?.contribution_amount??null} frequency={settings?.cycle_frequency??null} currentRecipient={recipient?.full_name||null}/>
     <section id="controls" className="card" style={{padding:20,marginBottom:18}}>
      <h3>Withdrawal access for this turn</h3><p className="muted" style={{fontSize:13}}>{recipient?'Enable the Withdraw button for '+(recipient.full_name||'the current recipient')+' at position #'+recipient.position_number+'. After payment is confirmed and the turn advances, access automatically switches off. You must enable it again for the next recipient.':'Withdrawal access stays unavailable until a next recipient is assigned.'}</p>

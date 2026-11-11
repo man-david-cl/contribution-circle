@@ -10,6 +10,7 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
   const [showPassword, setShowPassword] = useState(false);
   const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState('');
+  const [confirmationRequired, setConfirmationRequired] = useState(true);
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -40,12 +41,8 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
 
         if (signUpError) throw signUpError;
 
-        if (data.session) {
-          window.location.assign('/onboarding/bank');
-          return;
-        }
-
         setRegisteredEmail(email);
+        setConfirmationRequired(!data.session);
         setShowEmailConfirmation(true);
         form.reset();
         return;
@@ -117,11 +114,13 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
             <div className="email-modal-icon" aria-hidden="true">✉</div>
             <p className="eyebrow">One more step</p>
             <h2 id="email-modal-title">Confirm your email address</h2>
-            <p>We've created your Contribution Circle account. Please open the confirmation email we sent to:</p>
-            <strong className="email-modal-address">{registeredEmail}</strong>
-            <p>Click the confirmation link in that email to activate your account. If you don't see it, check your spam or junk folder.</p>
-            <Link className="btn btn-primary email-modal-button" href="/login">
-              Continue to login
+            <p>{confirmationRequired ? "We've created your Contribution Circle account. Please open the confirmation email we sent to:" : "Your Contribution Circle account has been created successfully. You can continue to add your bank details."}</p>
+            {confirmationRequired && <>
+              <strong className="email-modal-address">{registeredEmail}</strong>
+              <p>Click the confirmation link in that email to activate your account. If you don't see it, check your spam or junk folder.</p>
+            </>}
+            <Link className="btn btn-primary email-modal-button" href={confirmationRequired ? "/login" : "/onboarding/bank"}>
+              {confirmationRequired ? "Continue to login" : "Continue to bank details"}
             </Link>
             <button className="email-modal-close" type="button" onClick={() => setShowEmailConfirmation(false)}>
               Close

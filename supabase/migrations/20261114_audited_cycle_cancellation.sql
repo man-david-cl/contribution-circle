@@ -1,7 +1,5 @@
 -- Audited cancellation for unpaid contribution cycles.
--- This migration intentionally sorts before the level-specific circles migration.
-
-alter type public.cycle_status add value if not exists 'cancelled';
+-- The enum label is committed by the preceding 20261113 migration.
 
 alter table public.contributions
   drop constraint if exists contributions_status_check;

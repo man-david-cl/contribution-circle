@@ -46,8 +46,6 @@ set contribution_level = 1,
     circle_number = 1,
     group_name = 'Level 1 · Circle 1',
     contribution_amount = 10000,
-    -- Preserve the live legacy rotation position rather than resetting it.
-    current_position = current_position,
     max_members = greatest(max_members, 50),
     group_status = 'active'
 where id = (select id from public.group_settings order by created_at limit 1);

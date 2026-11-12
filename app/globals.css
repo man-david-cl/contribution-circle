@@ -178,3 +178,15 @@ th { color: var(--muted); font-weight: 700; background: #fafcfb; }
 .referral-hero>small{color:var(--muted);font-size:11px}
 .referral-note{font-size:12px;line-height:1.6}
 @media(max-width:520px){.referral-actions{display:grid;grid-template-columns:1fr}.referral-actions .btn{width:100%}.referral-hero{padding:20px}}
+
+
+/* Contribution circle configuration fields */
+.field-label { display: grid; gap: 6px; min-width: 0; color: var(--muted); font-size: 12px; font-weight: 700; }
+.field-label input, .field-label select {
+  width: 100%; min-width: 0; height: 42px; padding: 9px 11px;
+  border: 1px solid var(--line); border-radius: 10px; background: #fff;
+  color: var(--ink); outline: none;
+}
+.field-label input:focus, .field-label select:focus {
+  border-color: var(--green); box-shadow: 0 0 0 3px #176b5218;
+}

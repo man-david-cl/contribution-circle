@@ -14,18 +14,7 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: 'Choose one of the available contribution levels.' }, { status: 400 });
   }
 
-  const { data: profile } = await supabase.from('profiles')
-    .select('is_active,contribution_level').eq('id', user.id).single();
-  if (!profile?.is_active) {
-    return NextResponse.json({ error: 'Your membership is not active.' }, { status: 403 });
-  }
-
-  const { error } = await supabase.from('profiles')
-    .update({ contribution_level: amount }).eq('id', user.id);
-  if (error) {
-    console.error('Contribution level update failed:', error);
-    return NextResponse.json({ error: 'Could not save your contribution level. Please try again.' }, { status: 500 });
-  }
-
-  return NextResponse.json({ success: true, amount, previousAmount: profile.contribution_level ?? null });
+  const { data, error } = await supabase.rpc('member_select_contribution_level', { p_amount: amount });
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  return NextResponse.json({ success: true, data });
 }

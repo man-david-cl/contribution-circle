@@ -11,7 +11,9 @@ export default async function Dashboard(){
   s.rpc('get_current_recipient'),
   s.from('withdrawal_requests').select('id,status,created_at,cycle_id').eq('member_id',user.id).order('created_at',{ascending:false}).limit(20),
   s.from('contribution_cycles').select('id,cycle_number,month_label,contribution_amount,status,due_date').order('cycle_number',{ascending:false}).limit(6),
-  s.from('contributions').select('id,amount,status,paid_at,created_at,payment_reference,cycle:contribution_cycles!contributions_cycle_id_fkey(month_label,cycle_number)').eq('member_id',user.id).order('created_at',{ascending:false}).limit(50)
+  s.from('contributions').select('id,amount,status,paid_at,created_at,payment_reference,cycle:contribution_cycles!contributions_cycle_id_fkey(month_label,cycle_number)').eq('member_id',user.id).order('created_at',{ascending:false}).limit(1000),
+  s.from('withdrawal_requests').select('id',{count:'exact',head:true}).eq('member_id',user.id),
+  s.from('contributions').select('id',{count:'exact',head:true}).eq('member_id',user.id).in('status',['pending','submitted'])
  ]);
  const paid=(myContributions||[]).filter(c=>c.status==='verified');const totalPaid=paid.reduce((sum,c)=>sum+Number(c.amount||0),0);const pending=pendingCountResult.count??0;
  const paymentRows=(myContributions||[]).map(c=>({id:c.id,status:c.status,search:[c.status,c.payment_reference,c.cycle?.month_label,c.cycle?.cycle_number].join(' '),cells:['You',c.cycle?.month_label?c.cycle.month_label+' · #'+c.cycle.cycle_number:'Cycle',money(Number(c.amount)),c.status,c.paid_at?new Date(c.paid_at).toLocaleDateString('en-NG'):'—']}));

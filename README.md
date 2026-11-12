@@ -1,8 +1,8 @@
 # Contribution Circle
 
-A responsive Next.js + Supabase starter for a private rotating contribution group. The included flow covers registration, email confirmation, first-login bank setup, member dashboard, current recipient display, withdrawal request submission, admin review, and automatic position rotation after an administrator confirms payment.
+A responsive Next.js + Supabase application for a private rotating contribution group. It includes registration, email confirmation, bank onboarding, member and administrator dashboards, recurring contribution levels, Paystack checkout, payment verification, withdrawal review, and automatic position rotation after an administrator confirms the recipient has been paid.
 
-> **Important:** This is a starter implementation that must be configured and tested in your own Supabase/Vercel accounts before real use. It does not move money or connect to a bank/payment gateway. Admins manually verify the transfer and mark it paid. Do not use this as a public money-holding service without legal, security, and financial review.
+> **Important:** Configure and test the application in your own Supabase, Paystack, and Vercel accounts before real use. Paystack collects member contributions; the application records verified payments and tracks the shared pool. The administrator still independently verifies the recipient's bank transfer before confirming a withdrawal as paid. Obtain appropriate legal, security, and financial review before handling real funds.
 
 ## Requirements
 
@@ -91,6 +91,8 @@ Routes:
 - `/login` member login
 - `/onboarding/bank` mandatory first-login bank setup
 - `/dashboard` member dashboard
+- `/dashboard/levels` choose or change recurring contribution level
+- `/dashboard/contribute` make a Paystack deposit for an open cycle
 - `/admin` administrator dashboard
 
 ## 5. How the withdrawal process works
@@ -123,7 +125,7 @@ Routes:
 ## Current scope / known limitations
 
 - Single contribution group, monthly rotation model.
-- Manual bank transfer and administrator payment verification; no payment gateway.
+- Member contributions are collected through Paystack and pooled for the current cycle recipient. The administrator manually verifies the recipient's bank transfer before confirming payout.
 - Member registration and bank onboarding are connected to Supabase Auth/DB.
 - The starter provides cycle and contribution tables, but does not yet include a complete admin UI for creating cycles, collecting/validating each member's monthly contribution, editing the rotation list, password recovery, or notification delivery by SMS/email.
 - Admin setup and initial member positions are configured with the SQL snippets above.
@@ -139,14 +141,15 @@ The `feature/paystack-contributions` branch adds Paystack Checkout for active co
 1. Copy `.env.example` to `.env.local`.
 2. Set the Supabase URL, anon/publishable key, and server-only service-role key.
 3. Create or sign in to your Paystack account and copy the **test** secret key into `PAYSTACK_SECRET_KEY`. Never expose this key with a `NEXT_PUBLIC_` prefix or commit it.
-4. In Supabase SQL Editor, first confirm that the original `supabase/schema.sql` has been applied. Then run `supabase/paystack-contributions.sql`.
+4. In Supabase SQL Editor, first confirm that the original `supabase/schema.sql` has been applied. Then run `supabase/paystack-contributions.sql`. After that, apply the administrator/rotation migrations listed below in their stated order, followed by `supabase/migrations/20261113_member_contribution_levels.sql`.
 5. In Paystack Dashboard → Settings / API & Webhooks, configure the webhook URL as `https://YOUR_DOMAIN/api/payments/webhook` (for local testing, use a secure tunnel URL that forwards to your local server).
 6. Run `npm install` and `npm run dev`. Sign in as an active member and open `/dashboard/contribute`.
 
 ### Payment lifecycle
 
-- The server reads the cycle amount from the database; the browser cannot choose or override the amount.
-- Paystack receives the amount in kobo (NGN × 100).
+- The server reads the authenticated member's saved contribution level (₦10,000, ₦20,000, ₦30,000, ₦40,000, or ₦50,000); the browser cannot choose or override the payment amount.
+- A member's selected level applies to future cycles until they change it. Previously verified payments are not changed.
+- Paystack receives the selected amount in kobo (NGN × 100).
 - The return page verifies the reference directly against Paystack.
 - The webhook verifies Paystack's `x-paystack-signature` against the raw request body and then independently verifies the transaction with Paystack.
 - A database function locks the contribution row and marks it verified once. Repeated callback/webhook delivery does not create duplicate transaction records.

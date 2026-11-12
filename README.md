@@ -128,3 +128,29 @@ Routes:
 - The starter provides cycle and contribution tables, but does not yet include a complete admin UI for creating cycles, collecting/validating each member's monthly contribution, editing the rotation list, password recovery, or notification delivery by SMS/email.
 - Admin setup and initial member positions are configured with the SQL snippets above.
 - No production build or live account connection is claimed until you configure credentials and run the test checklist in your environment.
+
+
+## 8. Paystack contribution payments (new feature branch)
+
+The `feature/paystack-contributions` branch adds Paystack Checkout for active contribution cycles. It does not create a member cash wallet or hold funds: it records a successful payment against the member's existing contribution row, then writes a contribution transaction.
+
+### Configure
+
+1. Copy `.env.example` to `.env.local`.
+2. Set the Supabase URL, anon/publishable key, and server-only service-role key.
+3. Create or sign in to your Paystack account and copy the **test** secret key into `PAYSTACK_SECRET_KEY`. Never expose this key with a `NEXT_PUBLIC_` prefix or commit it.
+4. In Supabase SQL Editor, first confirm that the original `supabase/schema.sql` has been applied. Then run `supabase/paystack-contributions.sql`.
+5. In Paystack Dashboard → Settings / API & Webhooks, configure the webhook URL as `https://YOUR_DOMAIN/api/payments/webhook` (for local testing, use a secure tunnel URL that forwards to your local server).
+6. Run `npm install` and `npm run dev`. Sign in as an active member and open `/dashboard/contribute`.
+
+### Payment lifecycle
+
+- The server reads the cycle amount from the database; the browser cannot choose or override the amount.
+- Paystack receives the amount in kobo (NGN × 100).
+- The return page verifies the reference directly against Paystack.
+- The webhook verifies Paystack's `x-paystack-signature` against the raw request body and then independently verifies the transaction with Paystack.
+- A database function locks the contribution row and marks it verified once. Repeated callback/webhook delivery does not create duplicate transaction records.
+
+### Before going live
+
+Test successful, cancelled, failed, repeated-webhook, mismatched-amount, and already-paid cases using Paystack test mode. Confirm that the matching contribution changes to `verified` and one `transactions` row is created. Configure the production secret only after test-mode verification and have the payment/database flow reviewed before accepting real contributions.

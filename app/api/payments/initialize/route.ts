@@ -47,30 +47,25 @@ export async function POST(request: Request) {
     if (!Number.isFinite(amount) || amount <= 0 || amount > 10000000) {
       return NextResponse.json({ error: 'The contribution amount for this circle is invalid.' }, { status: 409 });
     }
-    const amountKobo = Math.round(amount * 100);
+    const reference = `CC-${randomUUID()}`;
+    // The RPC locks the cycle before creating/updating the contribution. This
+    // serializes payment setup with administrator cancellation.
+    const { data: prepared, error: prepareError } = await admin.rpc('prepare_contribution_payment', {
+      p_cycle_id: cycleId,
+      p_member_id: user.id,
+      p_payment_reference: reference,
+    });
+    if (prepareError) {
+      return NextResponse.json({ error: prepareError.message }, { status: 409 });
+    }
+    const preparedAmount = Number(prepared?.amount);
+    if (!Number.isFinite(preparedAmount) || preparedAmount <= 0) {
+      return NextResponse.json({ error: 'The contribution amount for this circle is invalid.' }, { status: 409 });
+    }
+    const amountKobo = Math.round(preparedAmount * 100);
     if (!Number.isSafeInteger(amountKobo)) {
       return NextResponse.json({ error: 'Your selected contribution level is invalid.' }, { status: 400 });
     }
-
-    const { data: existing } = await admin.from('contributions')
-      .select('id,status')
-      .eq('cycle_id', cycleId).eq('member_id', user.id).maybeSingle();
-    if (existing?.status === 'verified') {
-      return NextResponse.json({ error: 'Your contribution for this cycle is already confirmed.' }, { status: 409 });
-    }
-
-    const reference = `CC-${randomUUID()}`;
-    const contributionPayload = {
-      cycle_id: cycleId,
-      member_id: user.id,
-      amount,
-      status: 'pending',
-      payment_reference: reference,
-    };
-    const { error: saveError } = existing
-      ? await admin.from('contributions').update(contributionPayload).eq('id', existing.id)
-      : await admin.from('contributions').insert(contributionPayload);
-    if (saveError) throw saveError;
 
     // Do not derive customer-facing callbacks from request.url: on Vercel that
     // host can be a unique deployment URL. Prefer the stable production domain.
@@ -82,6 +77,12 @@ export async function POST(request: Request) {
       callbackUrl: `${appUrl}/payments/callback`,
       metadata: { contribution_cycle_id: cycleId, member_id: user.id, contribution_level: String(amount) },
     });
+
+    const { data: latestCycle } = await admin.from('contribution_cycles')
+      .select('status').eq('id', cycleId).maybeSingle();
+    if (!latestCycle || !['open', 'collecting'].includes(latestCycle.status)) {
+      return NextResponse.json({ error: 'This contribution cycle closed while payment was being prepared. Do not continue with this payment.' }, { status: 409 });
+    }
 
     return NextResponse.json({ authorizationUrl: payment.authorization_url });
   } catch (error) {

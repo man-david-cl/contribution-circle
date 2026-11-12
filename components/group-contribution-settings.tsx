@@ -92,7 +92,7 @@ export function GroupContributionSettings({ groups, members }: { groups: Group[]
             <span className="pill">{roster.length}/{group.max_members} members · {group.group_status}</span>
           </div>
           <form onSubmit={e => { e.preventDefault(); void saveGroup(group, e.currentTarget); }} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(135px,1fr))', gap: 10, alignItems: 'end', marginTop: 14 }}>
-            <label className="field-label">Contribution (₦)<input name="amount" type="number" min="1" step="1" defaultValue={group.contribution_amount} /></label>
+            <label className="field-label">Contribution (₦)<input name="amount" type="number" value={group.contribution_level * 10000} readOnly aria-readonly="true" /></label>
             <label className="field-label">Frequency<select name="frequency" defaultValue={group.cycle_frequency}><option value="weekly">Weekly</option><option value="biweekly">Every 2 weeks</option><option value="monthly">Monthly</option><option value="quarterly">Quarterly</option><option value="yearly">Yearly</option></select></label>
             <label className="field-label">Capacity<input name="capacity" type="number" min="2" max="500" defaultValue={group.max_members} /></label>
             <label className="field-label">Status<select name="status" defaultValue={group.group_status}><option value="active">Active</option><option value="paused">Paused</option><option value="completed">Completed</option></select></label>

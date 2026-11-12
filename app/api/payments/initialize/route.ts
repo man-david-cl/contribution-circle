@@ -6,6 +6,8 @@ import { initializePaystackPayment } from '@/lib/paystack';
 
 export const runtime = 'nodejs';
 
+const ALLOWED_LEVELS = [10000, 20000, 30000, 40000, 50000];
+
 export async function POST(request: Request) {
   try {
     const supabase = await createClient();
@@ -21,20 +23,23 @@ export async function POST(request: Request) {
     const admin = createAdminClient();
     const { data: cycle, error: cycleError } = await admin
       .from('contribution_cycles')
-      .select('id, contribution_amount, status, month_label')
+      .select('id,status,month_label')
       .eq('id', cycleId)
       .in('status', ['open', 'collecting'])
       .single();
     if (cycleError || !cycle) return NextResponse.json({ error: 'This contribution cycle is not open for payment.' }, { status: 404 });
 
     const { data: profile } = await admin
-      .from('profiles').select('is_active').eq('id', user.id).single();
+      .from('profiles').select('is_active,contribution_level').eq('id', user.id).single();
     if (!profile?.is_active) return NextResponse.json({ error: 'Your membership is not active.' }, { status: 403 });
 
-    const amount = Number(cycle.contribution_amount);
+    const amount = Number(profile.contribution_level);
+    if (!ALLOWED_LEVELS.includes(amount)) {
+      return NextResponse.json({ error: 'Choose a contribution level before making a deposit.' }, { status: 409 });
+    }
     const amountKobo = Math.round(amount * 100);
-    if (!Number.isSafeInteger(amountKobo) || amountKobo < 100) {
-      return NextResponse.json({ error: 'The administrator has not configured a valid contribution amount.' }, { status: 400 });
+    if (!Number.isSafeInteger(amountKobo)) {
+      return NextResponse.json({ error: 'Your selected contribution level is invalid.' }, { status: 400 });
     }
 
     const { data: existing } = await admin.from('contributions')
@@ -63,7 +68,7 @@ export async function POST(request: Request) {
       amountKobo,
       reference,
       callbackUrl: `${origin}/payments/callback`,
-      metadata: { contribution_cycle_id: cycleId, member_id: user.id },
+      metadata: { contribution_cycle_id: cycleId, member_id: user.id, contribution_level: amount },
     });
 
     return NextResponse.json({ authorizationUrl: payment.authorization_url });

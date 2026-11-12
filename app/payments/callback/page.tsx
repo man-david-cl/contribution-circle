@@ -1,10 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 
-export default function PaymentCallbackPage() {
+function PaymentCallbackContent() {
   const params = useSearchParams();
   const reference = params.get('reference') || params.get('trxref') || '';
   const [message, setMessage] = useState('Verifying your payment…');
@@ -41,4 +41,10 @@ export default function PaymentCallbackPage() {
       <Link className="btn btn-primary" href="/dashboard/contribute" style={{ display: 'inline-block', marginTop: 20 }}>Return to contributions</Link>
     </section>
   </main>;
+}
+
+export default function PaymentCallbackPage() {
+  return <Suspense fallback={<main className="container" style={{ paddingTop: 80 }}>Loading payment status…</main>}>
+    <PaymentCallbackContent />
+  </Suspense>;
 }

@@ -4,7 +4,7 @@ alter table public.profiles
   add column if not exists referred_by uuid references public.profiles(id) on delete set null;
 
 update public.profiles
-set referral_code = upper(substr(encode(gen_random_bytes(8), 'hex'), 1, 10))
+set referral_code = upper(substr(encode(public.gen_random_bytes(8), 'hex'), 1, 10))
 where referral_code is null;
 
 alter table public.profiles alter column referral_code set not null;
@@ -35,7 +35,7 @@ begin
     coalesce(new.raw_user_meta_data->>'full_name', ''),
     coalesce(nullif(new.raw_user_meta_data->>'username', ''), split_part(new.email, '@', 1) || '_' || substr(new.id::text, 1, 6)),
     coalesce(new.raw_user_meta_data->>'phone', ''),
-    upper(substr(encode(gen_random_bytes(8), 'hex'), 1, 10)),
+    upper(substr(encode(public.gen_random_bytes(8), 'hex'), 1, 10)),
     referrer_id
   );
   return new;

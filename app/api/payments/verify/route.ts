@@ -22,6 +22,9 @@ export async function POST(request: Request) {
       .select('id,member_id,amount,status,payment_reference')
       .eq('payment_reference', reference).eq('member_id', user.id).maybeSingle();
     if (!contribution) return NextResponse.json({ error: 'Payment record not found.' }, { status: 404 });
+    if (contribution.status === 'cancelled') {
+      return NextResponse.json({ error: 'This contribution cycle was cancelled. Do not retry payment. If you were charged, contact the administrator for reconciliation.' }, { status: 409 });
+    }
 
     const payment = await verifyPaystackPayment(reference);
     const expectedKobo = Math.round(Number(contribution.amount) * 100);

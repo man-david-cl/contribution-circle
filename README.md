@@ -174,3 +174,10 @@ After the original `supabase/schema.sql` and the Paystack migration, run these f
 These migrations add the withdrawal switch, secure member-visible recipient data, restore admin-only bank details, and install the automatic rotation and cycle setup functions. Do not skip the order: later migrations replace earlier withdrawal and admin RPC definitions.
 
 Once applied, open `/admin` and verify the recipient, bank details, member list, group amount, cycle state, and withdrawal switch before enabling withdrawals for a real group.
+
+
+## Member contribution levels
+
+Members choose one recurring NGN contribution level: ₦10,000, ₦20,000, ₦30,000, ₦40,000, or ₦50,000. Their selected level is saved on their profile and is used for each future contribution payment. Members can change or upgrade their level at any time; already confirmed payments are not changed. All verified payments in a cycle are pooled together for the current recipient. The withdrawal transaction amount is calculated from the sum of verified contributions in that cycle.
+
+After applying the existing schema and Paystack SQL, run `supabase/migrations/20261113_member_contribution_levels.sql` in the Supabase SQL Editor. Existing members will be asked to choose a level before they can access their member dashboard or make a deposit.

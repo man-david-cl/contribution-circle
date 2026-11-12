@@ -168,3 +168,13 @@ th { color: var(--muted); font-weight: 700; background: #fafcfb; }
 @media(max-width:1100px){.admin-stats{grid-template-columns:repeat(3,minmax(0,1fr))}.stats-grid.member-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.dashboard-sidebar{width:205px;flex-basis:205px}}
 @media(max-width:760px){.dashboard-shell{width:calc(100% - 32px)}.dashboard-layout{display:block;padding-top:12px}.dashboard-sidebar{position:static;width:100%;margin-bottom:18px}.dashboard-sidebar .menu{overflow-x:auto}.member-id{display:none}.dashboard-heading{align-items:flex-start;flex-direction:column}.dashboard-heading>.btn{width:100%}.admin-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.dashboard-main{gap:15px}.dashboard-section{padding:17px 15px}}
 @media(max-width:520px){.dashboard-shell{width:calc(100% - 26px)}.dashboard-nav{align-items:center}.member-greeting,.admin-greeting{display:none}.admin-role{display:none}.stats-grid.member-stats,.admin-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.stat-card{padding:13px;grid-template-columns:29px 1fr;column-gap:7px}.stat-icon{width:29px;height:29px;font-size:14px}.stat-label{font-size:10px}.stat-card strong{font-size:19px}.stat-card small{font-size:9px}.recipient-panel{padding:20px}.recipient-topline{flex-direction:column;gap:12px}.recipient-topline h2{font-size:22px}.recipient-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.table-toolbar{flex-wrap:wrap}.table-search{flex-basis:100%}.table-filter{flex:1}.table-filter select{width:100%;max-width:none}.table-count{margin-left:auto}}
+
+/* Member referrals */
+.referral-hero{padding:clamp(22px,4vw,34px);background:linear-gradient(135deg,#fff 0%,#f0f7f2 100%);min-width:0}
+.referral-hero h2{font-size:clamp(22px,3vw,30px);letter-spacing:-.8px;margin:12px 0 8px}
+.referral-hero>p{color:var(--muted);font-size:13px;line-height:1.6;max-width:620px}
+.referral-url{margin:20px 0 13px;padding:14px 15px;border:1px dashed #a9c9b7;background:#fff;border-radius:12px;color:var(--green-dark);font-size:13px;font-weight:700;overflow-wrap:anywhere;word-break:break-word}
+.referral-actions{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px}
+.referral-hero>small{color:var(--muted);font-size:11px}
+.referral-note{font-size:12px;line-height:1.6}
+@media(max-width:520px){.referral-actions{display:grid;grid-template-columns:1fr}.referral-actions .btn{width:100%}.referral-hero{padding:20px}}

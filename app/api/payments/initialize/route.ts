@@ -68,7 +68,7 @@ export async function POST(request: Request) {
       amountKobo,
       reference,
       callbackUrl: `${origin}/payments/callback`,
-      metadata: { contribution_cycle_id: cycleId, member_id: user.id, contribution_level: amount },
+      metadata: { contribution_cycle_id: cycleId, member_id: user.id, contribution_level: String(amount) },
     });
 
     return NextResponse.json({ authorizationUrl: payment.authorization_url });

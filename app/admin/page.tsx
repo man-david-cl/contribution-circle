@@ -6,14 +6,16 @@ const money=(value:number)=>new Intl.NumberFormat('en-NG',{style:'currency',curr
 export default async function Admin(){
  const s=await createClient();const {data:{user}}=await s.auth.getUser();if(!user)redirect('/login');
  const {data:p}=await s.from('profiles').select('role,full_name').eq('id',user.id).single();if(p?.role!=='admin')redirect('/dashboard');
- const [membersResult,activeResult,requestsResult,contributionsResult,transactionsResult]=await Promise.all([
+ const [membersResult,activeResult,requestsResult,contributionsResult,transactionsResult,pendingContributionsResult,pendingWithdrawalsResult]=await Promise.all([
   s.from('profiles').select('id',{count:'exact',head:true}),s.from('profiles').select('id',{count:'exact',head:true}).eq('is_active',true),
   s.from('withdrawal_requests').select('id,status,created_at,member:profiles!withdrawal_requests_member_id_fkey(full_name)').order('created_at',{ascending:false}).limit(100),
   s.from('contributions').select('id,amount,status,paid_at,created_at,payment_reference,member:profiles!contributions_member_id_fkey(full_name),cycle:contribution_cycles!contributions_cycle_id_fkey(month_label,cycle_number)').order('created_at',{ascending:false}).limit(100),
-  s.from('transactions').select('amount').eq('transaction_type','contribution')
+  s.from('transactions').select('amount').eq('transaction_type','contribution'),
+  s.from('contributions').select('id',{count:'exact',head:true}).in('status',['pending','submitted']),
+  s.from('withdrawal_requests').select('id',{count:'exact',head:true}).eq('status','pending')
  ]);
  const requests=requestsResult.data||[];const contributions=contributionsResult.data||[];const received=(transactionsResult.data||[]).reduce((sum,t)=>sum+Number(t.amount||0),0);
- const pendingPayments=contributions.filter(c=>['pending','submitted'].includes(c.status)).length;const pendingWithdrawals=requests.filter(r=>r.status==='pending').length;
+ const pendingPayments=pendingContributionsResult.count??0;const pendingWithdrawals=pendingWithdrawalsResult.count??0;
  const withdrawalRows=requests.map(r=>({id:r.id,status:r.status,search:[r.member?.full_name,r.status,r.id].join(' '),cells:[r.member?.full_name||'Member',new Date(r.created_at).toLocaleDateString('en-NG'),r.status]}));
  const paymentRows=contributions.map(c=>({id:c.id,status:c.status,search:[c.member?.full_name,c.status,c.payment_reference,c.cycle?.month_label,c.cycle?.cycle_number].join(' '),cells:[c.member?.full_name||'Member',c.cycle?.month_label?c.cycle.month_label+' · #'+c.cycle.cycle_number:'Cycle',money(Number(c.amount)),c.status,c.paid_at?new Date(c.paid_at).toLocaleString('en-NG'):'—']}));
  return <main className="container dashboard-shell"><header className="nav dashboard-nav"><Link href="/" className="brand">contribution<span>circle.</span></Link><div className="nav-actions"><span className="admin-greeting">{p?.full_name||'Administrator'}</span><span className="pill admin-role">Administrator</span><form action="/auth/signout" method="post"><button className="btn btn-secondary">Log out</button></form></div></header>

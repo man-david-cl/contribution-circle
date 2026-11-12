@@ -3,6 +3,12 @@
 
 alter type public.cycle_status add value if not exists 'cancelled';
 
+alter table public.contributions
+  drop constraint if exists contributions_status_check;
+alter table public.contributions
+  add constraint contributions_status_check
+  check (status in ('pending', 'submitted', 'verified', 'rejected', 'cancelled'));
+
 alter table public.contribution_cycles
   add column if not exists cancelled_at timestamptz,
   add column if not exists cancelled_by uuid references public.profiles(id),

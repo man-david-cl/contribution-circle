@@ -4,7 +4,7 @@ import {useMemo,useState} from 'react';
 import {AdminActions} from '@/components/admin-actions';
 
 type Row={id:string;search:string;status:string;cells:string[]};
-type Props={mode:'payments'|'withdrawals';rows:Row[];emptyMessage:string;searchPlaceholder:string};
+type Props={mode:'payments'|'withdrawals'|'member-withdrawals';rows:Row[];emptyMessage:string;searchPlaceholder:string};
 
 const statusClass=(status:string)=>['pending','submitted'].includes(status.toLowerCase())?'pill pill-warn':status.toLowerCase()==='rejected'?'pill pill-red':'pill';
 
@@ -13,7 +13,7 @@ export function DashboardDataTable({mode,rows,emptyMessage,searchPlaceholder}:Pr
   const [status,setStatus]=useState('all');
   const statuses=useMemo(()=>Array.from(new Set(rows.map(row=>row.status).filter(Boolean))),[rows]);
   const filtered=useMemo(()=>rows.filter(row=>(status==='all'||row.status===status)&&(!query||row.search.toLowerCase().includes(query.toLowerCase()))),[rows,status,query]);
-  const headings=mode==='payments'?['Member','Cycle','Amount','Status','Paid date']:['Member','Submitted','Status','Action'];
+  const headings=mode==='payments'?['Member','Cycle','Amount','Status','Paid date']:mode==='member-withdrawals'?['Submitted','Status','Request ID']:['Member','Submitted','Status','Action'];
   return <div className="data-table">
     <div className="table-toolbar">
       <label className="table-search"><span className="sr-only">Search records</span><span aria-hidden="true">⌕</span><input value={query} onChange={e=>setQuery(e.target.value)} placeholder={searchPlaceholder}/></label>

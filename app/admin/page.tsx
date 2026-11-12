@@ -7,10 +7,10 @@ export default async function Admin(){
  const s=await createClient();const {data:{user}}=await s.auth.getUser();if(!user)redirect('/login');
  const {data:p}=await s.from('profiles').select('role,full_name').eq('id',user.id).single();if(p?.role!=='admin')redirect('/dashboard');
  const [membersResult,activeResult,requestsResult,contributionsResult,transactionsResult,pendingContributionsResult,pendingWithdrawalsResult]=await Promise.all([
-  s.from('profiles').select('id',{count:'exact',head:true}),s.from('profiles').select('id',{count:'exact',head:true}).eq('is_active',true),
+  s.from('profiles').select('id',{count:'exact',head:true}).eq('role','member'),s.from('profiles').select('id',{count:'exact',head:true}).eq('role','member').eq('is_active',true),
   s.from('withdrawal_requests').select('id,status,created_at,member:profiles!withdrawal_requests_member_id_fkey(full_name)').order('created_at',{ascending:false}).limit(100),
   s.from('contributions').select('id,amount,status,paid_at,created_at,payment_reference,member:profiles!contributions_member_id_fkey(full_name),cycle:contribution_cycles!contributions_cycle_id_fkey(month_label,cycle_number)').order('created_at',{ascending:false}).limit(100),
-  s.from('transactions').select('amount').eq('transaction_type','contribution'),
+  s.from('transactions').select('amount').eq('transaction_type','contribution').limit(1000),
   s.from('contributions').select('id',{count:'exact',head:true}).in('status',['pending','submitted']),
   s.from('withdrawal_requests').select('id',{count:'exact',head:true}).eq('status','pending')
  ]);

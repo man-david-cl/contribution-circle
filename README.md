@@ -1,8 +1,8 @@
 # Contribution Circle
 
-A responsive Next.js + Supabase starter for a private rotating contribution group. The included flow covers registration, email confirmation, first-login bank setup, member dashboard, current recipient display, withdrawal request submission, admin review, and automatic position rotation after an administrator confirms payment.
+A responsive Next.js + Supabase application for a private rotating contribution group. It includes registration, email confirmation, bank onboarding, member and administrator dashboards, recurring contribution levels, Paystack checkout, payment verification, withdrawal review, and automatic position rotation after an administrator confirms the recipient has been paid.
 
-> **Important:** This is a starter implementation that must be configured and tested in your own Supabase/Vercel accounts before real use. It does not move money or connect to a bank/payment gateway. Admins manually verify the transfer and mark it paid. Do not use this as a public money-holding service without legal, security, and financial review.
+> **Important:** Configure and test the application in your own Supabase, Paystack, and Vercel accounts before real use. Paystack collects member contributions; the application records verified payments and tracks the shared pool. The administrator still independently verifies the recipient's bank transfer before confirming a withdrawal as paid. Obtain appropriate legal, security, and financial review before handling real funds.
 
 ## Requirements
 
@@ -76,7 +76,7 @@ select 1, to_char(current_date, 'FMMonth YYYY'), contribution_amount, 'collectin
 from public.group_settings limit 1;
 ```
 
-For each new cycle, an administrator should create the next `contribution_cycles` row and set the recipient to the current position. The rotation RPC advances `group_settings.current_position` after a paid withdrawal; it does not automatically create the next month's cycle.
+The administrator dashboard can open the initial cycle. After an approved withdrawal is confirmed paid, the rotation RPC advances to the next eligible member and creates or assigns the next open cycle automatically.
 
 ## 4. Run the app
 
@@ -91,15 +91,17 @@ Routes:
 - `/login` member login
 - `/onboarding/bank` mandatory first-login bank setup
 - `/dashboard` member dashboard
+- `/dashboard/levels` choose or change recurring contribution level
+- `/dashboard/contribute` make a Paystack deposit for an open cycle
 - `/admin` administrator dashboard
 
 ## 5. How the withdrawal process works
 
-1. The current recipient sees their details and the **Request withdrawal** button.
-2. The button calls the `request_current_withdrawal()` database function. The function checks the logged-in user is the current eligible recipient and prevents a duplicate open request for that cycle.
-3. An administrator opens `/admin` and approves or rejects the request.
-4. After independently verifying that the transfer really reached the recipient, the admin selects **Confirm paid**.
-5. The database transaction marks the request paid, writes a transaction and audit record, completes the cycle, advances the active position, and notifies members. The position only advances at this last step.
+1. The current recipient sees their name/position and the **Withdraw** button only after the administrator enables access for that turn.
+2. The button calls `request_current_withdrawal()`, which checks the authenticated user is the active recipient and that the administrator has enabled withdrawal access.
+3. The administrator opens `/admin`, checks the recipient's bank details, and approves or rejects the request.
+4. After independently verifying that the transfer reached the recipient, the admin selects **Confirm paid**.
+5. The database records the withdrawal and audit event, completes the cycle, advances to the next eligible member, creates or assigns the next open cycle, disables withdrawal access for the new turn, and notifies members.
 
 ## 6. Deploy to Vercel
 
@@ -116,15 +118,76 @@ Routes:
 - Restrict who can access the Supabase dashboard and Vercel project.
 - Set up database backups and review audit logs.
 - Test RLS with at least two member accounts and one admin account.
-- The current-recipient RPC is the intended way to reveal the active recipient's bank details; member profile reads are restricted to the member and admins.
+- Member dashboards use a public recipient lookup that exposes only the recipient's name and position. The administrator-only recipient RPC exposes bank and phone details; member profile reads remain restricted.
 - Review the SQL policies and have a qualified engineer audit the database and API before handling real financial activity.
 - Do not store or request online banking passwords, card PINs, OTPs, or card security codes.
 
 ## Current scope / known limitations
 
 - Single contribution group, monthly rotation model.
-- Manual bank transfer and administrator payment verification; no payment gateway.
+- Member contributions are collected through Paystack and pooled for the current cycle recipient. The administrator manually verifies the recipient's bank transfer before confirming payout.
 - Member registration and bank onboarding are connected to Supabase Auth/DB.
 - The starter provides cycle and contribution tables, but does not yet include a complete admin UI for creating cycles, collecting/validating each member's monthly contribution, editing the rotation list, password recovery, or notification delivery by SMS/email.
 - Admin setup and initial member positions are configured with the SQL snippets above.
 - No production build or live account connection is claimed until you configure credentials and run the test checklist in your environment.
+
+
+## 8. Paystack contribution payments (new feature branch)
+
+The `feature/paystack-contributions` branch adds Paystack Checkout for active contribution cycles. It does not create a member cash wallet or hold funds: it records a successful payment against the member's existing contribution row, then writes a contribution transaction.
+
+### Configure
+
+1. Copy `.env.example` to `.env.local`.
+2. Set the Supabase URL, anon/publishable key, and server-only service-role key.
+3. Create or sign in to your Paystack account and copy the **test** secret key into `PAYSTACK_SECRET_KEY`. Never expose this key with a `NEXT_PUBLIC_` prefix or commit it.
+4. In Supabase SQL Editor, first confirm that the original `supabase/schema.sql` has been applied. Then run `supabase/paystack-contributions.sql`. After that, apply the administrator/rotation migrations listed below in their stated order, followed by `supabase/migrations/20261113_member_contribution_levels.sql`.
+5. In Paystack Dashboard → Settings / API & Webhooks, configure the webhook URL as `https://YOUR_DOMAIN/api/payments/webhook` (for local testing, use a secure tunnel URL that forwards to your local server).
+6. Run `npm install` and `npm run dev`. Sign in as an active member and open `/dashboard/contribute`.
+
+### Payment lifecycle
+
+- The server reads the authenticated member's saved contribution level (₦10,000, ₦20,000, ₦30,000, ₦40,000, or ₦50,000); the browser cannot choose or override the payment amount.
+- A member's selected level applies to future cycles until they change it. Previously verified payments are not changed.
+- Paystack receives the selected amount in kobo (NGN × 100).
+- The return page verifies the reference directly against Paystack.
+- The webhook verifies Paystack's `x-paystack-signature` against the raw request body and then independently verifies the transaction with Paystack.
+- A database function locks the contribution row and marks it verified once. Repeated callback/webhook delivery does not create duplicate transaction records.
+
+### Before going live
+
+Test successful, cancelled, failed, repeated-webhook, mismatched-amount, and already-paid cases using Paystack test mode. Confirm that the matching contribution changes to `verified` and one `transactions` row is created. Configure the production secret only after test-mode verification and have the payment/database flow reviewed before accepting real contributions.
+
+
+## 9. Restored administrator rotation controls
+
+The redesigned administrator dashboard retains the original group-management workflow alongside the newer payment analytics. It includes the current recipient's private bank details, the member/position register, group contribution amount, initial-cycle setup, and a per-turn withdrawal enable/disable control. Confirming an approved withdrawal as paid advances to the next eligible member, creates or assigns the next open cycle, and disables withdrawal access until the administrator enables it for the new recipient.
+
+### Apply the restored Supabase migrations
+
+After the original `supabase/schema.sql` and the Paystack migration, run these files in the Supabase SQL Editor in this order:
+
+1. `supabase/migrations/20261111_admin_withdrawal_controls.sql`
+2. `supabase/migrations/20261111_member_privacy_per_turn_withdrawal.sql`
+3. `supabase/migrations/20261111_auto_next_contribution_cycle.sql`
+4. `supabase/migrations/20261112_admin_group_contribution_amount.sql`
+5. `supabase/migrations/20261112_admin_open_initial_cycle.sql`
+6. `supabase/migrations/20261112_admin_set_withdrawal_enabled.sql`
+
+These migrations add the withdrawal switch, secure member-visible recipient data, restore admin-only bank details, and install the automatic rotation and cycle setup functions. Do not skip the order: later migrations replace earlier withdrawal and admin RPC definitions.
+
+Once applied, open `/admin` and verify the recipient, bank details, member list, group amount, cycle state, and withdrawal switch before enabling withdrawals for a real group.
+
+
+## Member contribution levels
+
+Members choose one recurring NGN contribution level: ₦10,000, ₦20,000, ₦30,000, ₦40,000, or ₦50,000. Their selected level is saved on their profile and is used for each future contribution payment. Members can change or upgrade their level at any time; already confirmed payments are not changed. All verified payments in a cycle are pooled together for the current recipient. The withdrawal transaction amount is calculated from the sum of verified contributions in that cycle.
+
+After applying the existing schema and Paystack SQL, run `supabase/migrations/20261113_member_contribution_levels.sql` in the Supabase SQL Editor. Existing members will be asked to choose a level before they can access their member dashboard or make a deposit.
+
+
+## Member referrals
+
+The member dashboard includes `/dashboard/referrals`, where each member can copy or share a unique referral URL and see the accounts registered through it. Referral codes are generated for existing members and assigned to new members automatically. A new signup is attributed when it uses the `?ref=CODE` query parameter. The current feature tracks referrals only; it does not pay cash rewards or modify contribution and withdrawal amounts.
+
+Before enabling this feature in an existing Supabase project, apply `supabase/migrations/20261114_member_referrals.sql` after the contribution-level migration. The migration backfills referral codes, records the referring member during signup, and adds a secure RPC for showing referral details without exposing referred members' bank information.

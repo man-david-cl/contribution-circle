@@ -6,8 +6,6 @@ import { initializePaystackPayment } from '@/lib/paystack';
 
 export const runtime = 'nodejs';
 
-const ALLOWED_LEVELS = [10000, 20000, 30000, 40000, 50000];
-
 export async function POST(request: Request) {
   // Fail closed before creating a pending contribution record. The Paystack key
   // is server-only and payment initialization stays unavailable until configured.
@@ -46,8 +44,8 @@ export async function POST(request: Request) {
     }
 
     const amount = Number(cycle.contribution_amount || profile.contribution_level);
-    if (!ALLOWED_LEVELS.includes(amount)) {
-      return NextResponse.json({ error: 'Choose a contribution level before making a deposit.' }, { status: 409 });
+    if (!Number.isFinite(amount) || amount <= 0 || amount > 10000000) {
+      return NextResponse.json({ error: 'The contribution amount for this circle is invalid.' }, { status: 409 });
     }
     const amountKobo = Math.round(amount * 100);
     if (!Number.isSafeInteger(amountKobo)) {

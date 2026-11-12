@@ -26,6 +26,9 @@ export default async function ContributePage() {
     .eq('member_id', user.id);
 
   const paidCycleIds = new Set((myContributions || []).filter(c => c.status === 'verified').map(c => c.cycle_id));
+  // This is server-only: payment controls become available automatically after the
+  // client supplies the Paystack secret and Vercel redeploys the application.
+  const paystackConfigured = Boolean(process.env.PAYSTACK_SECRET_KEY);
 
   return <main className="container dashboard-shell">
     <header className="nav dashboard-nav">
@@ -39,6 +42,10 @@ export default async function ContributePage() {
       <div className="eyebrow">Member deposits</div>
       <h1 style={{ fontSize: 30, margin: '8px 0' }}>Make your contribution</h1>
       <p className="muted">Your active contribution level is <strong>{money(Number(profile.contribution_level))}</strong> per cycle. Your payment joins the same shared pool as every other member.</p>
+      {!paystackConfigured && <div className="card" role="status" style={{ padding: 16, marginTop: 20 }}>
+        <strong>Online payments are not available yet.</strong>
+        <p className="muted" style={{ marginBottom: 0 }}>We are completing payment-provider setup with the administrator. Your contribution level and account remain available, but no payment will be initiated or recorded until Paystack is configured.</p>
+      </div>}
       <div style={{ display: 'grid', gap: 12, marginTop: 24 }}>
         {cycles?.length ? cycles.map(cycle => {
           const paid = paidCycleIds.has(cycle.id);
@@ -48,7 +55,7 @@ export default async function ContributePage() {
               <div className="muted" style={{ fontSize: 13, marginTop: 5 }}>Due {cycle.due_date ? new Date(cycle.due_date).toLocaleDateString('en-NG') : 'date not set'}</div>
               <div style={{ marginTop: 8, fontWeight: 700 }}>{money(Number(profile.contribution_level))}</div>
             </div>
-            {paid ? <span className="pill">Payment confirmed</span> : <PayContributionButton cycleId={cycle.id} />}
+            {paid ? <span className="pill">Payment confirmed</span> : paystackConfigured ? <PayContributionButton cycleId={cycle.id} /> : <span className="pill">Payments pending setup</span>}
           </div>;
         }) : <p className="muted">There are no open contribution cycles. Please contact your administrator.</p>}
       </div>

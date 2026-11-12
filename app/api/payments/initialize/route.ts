@@ -32,17 +32,20 @@ export async function POST(request: Request) {
     const admin = createAdminClient();
     const { data: cycle, error: cycleError } = await admin
       .from('contribution_cycles')
-      .select('id,status,month_label')
+      .select('id,status,month_label,group_id,contribution_amount')
       .eq('id', cycleId)
       .in('status', ['open', 'collecting'])
       .single();
     if (cycleError || !cycle) return NextResponse.json({ error: 'This contribution cycle is not open for payment.' }, { status: 404 });
 
     const { data: profile } = await admin
-      .from('profiles').select('is_active,contribution_level').eq('id', user.id).single();
+      .from('profiles').select('is_active,contribution_level,group_id').eq('id', user.id).single();
     if (!profile?.is_active) return NextResponse.json({ error: 'Your membership is not active.' }, { status: 403 });
+    if (!profile.group_id || profile.group_id !== cycle.group_id) {
+      return NextResponse.json({ error: 'This cycle does not belong to your contribution circle.' }, { status: 403 });
+    }
 
-    const amount = Number(profile.contribution_level);
+    const amount = Number(cycle.contribution_amount || profile.contribution_level);
     if (!ALLOWED_LEVELS.includes(amount)) {
       return NextResponse.json({ error: 'Choose a contribution level before making a deposit.' }, { status: 409 });
     }

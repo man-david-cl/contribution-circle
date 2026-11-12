@@ -1,2 +1,73 @@
 import Link from 'next/link';
-export default function Home(){return <main className="container"><header className="nav"><div className="brand">contribution<span>circle.</span></div><div style={{display:'flex',gap:10}}><Link className="btn btn-secondary" href="/login">Log in</Link><Link className="btn btn-primary" href="/register">Join your circle</Link></div></header><section className="hero" style={{display:'grid',gridTemplateColumns:'1.1fr .9fr',gap:35,alignItems:'center'}}><div><div className="eyebrow">A clearer way to contribute together</div><h1 style={{fontSize:'clamp(38px,6vw,64px)',lineHeight:1.04,letterSpacing:'-2.5px',margin:'18px 0'}}>Your turn.<br/><span style={{color:'#176b52'}}>Your circle.</span><br/>All in sync.</h1><p className="muted" style={{fontSize:17,lineHeight:1.7,maxWidth:530}}>Keep your rotating contribution group organized. See whose turn it is, track monthly contributions, and manage withdrawal requests with a clear record for every cycle.</p><div style={{display:'flex',gap:12,marginTop:25,flexWrap:'wrap'}}><Link className="btn btn-primary" href="/register">Get started →</Link><Link className="btn btn-secondary" href="/login">Member login</Link></div></div><div className="card" style={{padding:24,transform:'rotate(1deg)'}}><div className="eyebrow">Current recipient</div><div style={{display:'flex',alignItems:'center',gap:13,marginTop:20}}><div style={{width:48,height:48,borderRadius:15,background:'#e7f3ed',display:'grid',placeItems:'center',color:'#176b52',fontWeight:800}}>01</div><div><strong>Recipient details</strong><div className="muted" style={{fontSize:12,marginTop:4}}>Visible to approved members</div></div></div><div style={{height:1,background:'#e6ece8',margin:'22px 0'}}/><div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:18}}>{['Full name','Member position','Bank details','Next cycle'].map(x=><div key={x}><div className="muted" style={{fontSize:11}}>{x}</div><strong style={{fontSize:14}}>Shown in your dashboard</strong></div>)}</div><div style={{background:'#e7f3ed',color:'#176b52',padding:13,borderRadius:12,marginTop:24,fontSize:12,fontWeight:700}}>Rotation advances only after payment is confirmed.</div></div></section><section style={{padding:'20px 0 70px'}}><div className="eyebrow">Built around trust and clarity</div><div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(210px,1fr))',gap:14,marginTop:16}}>{[['01','One clear recipient','Everyone can see whose turn is active.'],['02','Track every cycle','Keep expected and received contributions organized.'],['03','Verified withdrawals','Requests are reviewed before the rotation moves.']].map(([n,t,d])=><div className="card" style={{padding:20}} key={n}><div className="eyebrow">{n}</div><h3>{t}</h3><p className="muted" style={{fontSize:13,lineHeight:1.6}}>{d}</p></div>)}</div></section><footer className="muted" style={{padding:'20px 0',borderTop:'1px solid #e6ece8',fontSize:12}}>Contribution Circle · Private group contribution management</footer></main>}
+
+const features = [
+  { number: '01', title: 'One clear recipient', description: "Everyone can see whose turn is active." },
+  { number: '02', title: 'Track every cycle', description: 'Keep expected and received contributions organized.' },
+  { number: '03', title: 'Verified withdrawals', description: 'Requests are reviewed before the rotation moves.' },
+];
+
+export default function Home() {
+  return (
+    <main className="container">
+      <header className="nav landing-nav">
+        <Link href="/" className="brand" aria-label="Contribution Circle home">contribution<span>circle.</span></Link>
+        <div className="nav-actions">
+          <Link className="btn btn-secondary" href="/login">Log in</Link>
+          <Link className="btn btn-primary" href="/register">Join your circle</Link>
+        </div>
+      </header>
+
+      <section className="hero hero-layout">
+        <div className="hero-copy">
+          <div className="eyebrow">A clearer way to contribute together</div>
+          <h1 className="hero-title">Your turn.<br /><span>Your circle.</span><br />All in sync.</h1>
+          <p className="muted hero-description">
+            Keep your rotating contribution group organized. See whose turn it is,
+            track monthly contributions, and manage withdrawal requests with a clear
+            record for every cycle.
+          </p>
+          <div className="hero-actions">
+            <Link className="btn btn-primary" href="/register">Get started <span aria-hidden="true">→</span></Link>
+            <Link className="btn btn-secondary" href="/login">Member login</Link>
+          </div>
+        </div>
+
+        <div className="card hero-preview">
+          <div className="eyebrow">Current recipient</div>
+          <div className="preview-person">
+            <div className="preview-avatar" aria-hidden="true">01</div>
+            <div>
+              <strong>Recipient details</strong>
+              <div className="muted preview-caption">Visible to approved members</div>
+            </div>
+          </div>
+          <div className="preview-divider" />
+          <div className="preview-details">
+            {['Full name', 'Member position', 'Bank details', 'Next cycle'].map((item) => (
+              <div key={item}>
+                <div className="muted preview-label">{item}</div>
+                <strong className="preview-value">Shown in your dashboard</strong>
+              </div>
+            ))}
+          </div>
+          <div className="preview-note">Rotation advances only after payment is confirmed.</div>
+        </div>
+      </section>
+
+      <section className="features-section">
+        <div className="eyebrow">Built around trust and clarity</div>
+        <div className="feature-grid">
+          {features.map((feature) => (
+            <article className="card feature-card" key={feature.number}>
+              <div className="eyebrow">{feature.number}</div>
+              <h3>{feature.title}</h3>
+              <p className="muted">{feature.description}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <footer className="site-footer">Contribution Circle · Private group contribution management</footer>
+    </main>
+  );
+}

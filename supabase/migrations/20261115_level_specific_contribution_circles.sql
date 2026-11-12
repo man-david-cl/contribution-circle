@@ -505,6 +505,15 @@ $$;
 
 grant execute on function public.request_current_withdrawal() to authenticated;
 
+-- Level assignment is now performed only by the guarded RPC, not direct profile updates.
+revoke update (contribution_level) on public.profiles from authenticated;
+
+-- Retire single-global-group RPCs so they cannot create unassigned legacy cycles
+-- or change the first circle behind the new per-circle controls.
+revoke all on function public.admin_open_initial_cycle(uuid) from public, anon, authenticated;
+revoke all on function public.admin_update_group_contribution_amount(uuid,numeric) from public, anon, authenticated;
+revoke all on function public.admin_set_withdrawal_enabled(boolean,uuid) from public, anon, authenticated;
+
 create or replace function public.admin_update_withdrawal(
   p_request_id uuid, p_action text, p_admin_id uuid
 )

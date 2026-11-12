@@ -71,12 +71,14 @@ export async function POST(request: Request) {
       : await admin.from('contributions').insert(contributionPayload);
     if (saveError) throw saveError;
 
-    const origin = new URL(request.url).origin;
+    // Do not derive customer-facing callbacks from request.url: on Vercel that
+    // host can be a unique deployment URL. Prefer the stable production domain.
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || new URL(request.url).origin).replace(/\/$/, '');
     const payment = await initializePaystackPayment({
       email: user.email,
       amountKobo,
       reference,
-      callbackUrl: `${origin}/payments/callback`,
+      callbackUrl: `${appUrl}/payments/callback`,
       metadata: { contribution_cycle_id: cycleId, member_id: user.id, contribution_level: String(amount) },
     });
 

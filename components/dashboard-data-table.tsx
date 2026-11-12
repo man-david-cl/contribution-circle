@@ -21,7 +21,7 @@ export function DashboardDataTable({mode,rows,emptyMessage,searchPlaceholder}:Pr
       <span className="table-count">{filtered.length} of {rows.length}</span>
     </div>
     <div className="table-wrap"><table className="dashboard-table"><thead><tr>{headings.map(h=><th key={h}>{h}</th>)}</tr></thead><tbody>
-      {filtered.length?filtered.map(row=><tr key={row.id}>{row.cells.map((cell,index)=><td key={index}>{mode==='payments'&&index===3?<span className={statusClass(row.status)}>{cell}</span>:mode==='withdrawals'&&index===2?<span className={statusClass(row.status)}>{cell}</span>:cell}</td>)}{mode==='withdrawals'&&<td><AdminActions id={row.id} status={row.status}/></td>}</tr>):<tr><td colSpan={headings.length} className="table-empty">{emptyMessage}</td></tr>}
+      {filtered.length?filtered.map(row=><tr key={row.id}>{row.cells.map((cell,index)=><td key={index}>{mode==='payments'&&index===3?<span className={statusClass(row.status)}>{cell}</span>:mode==='member-withdrawals'&&index===1||mode==='withdrawals'&&index===2?<span className={statusClass(row.status)}>{cell}</span>:cell}</td>)}{mode==='withdrawals'&&<td><AdminActions id={row.id} status={row.status}/></td>}</tr>):<tr><td colSpan={headings.length} className="table-empty">{emptyMessage}</td></tr>}
     </tbody></table></div>
   </div>;
 }

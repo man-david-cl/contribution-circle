@@ -184,3 +184,10 @@ Once applied, open `/admin` and verify the recipient, bank details, member list,
 Members choose one recurring NGN contribution level: ₦10,000, ₦20,000, ₦30,000, ₦40,000, or ₦50,000. Their selected level is saved on their profile and is used for each future contribution payment. Members can change or upgrade their level at any time; already confirmed payments are not changed. All verified payments in a cycle are pooled together for the current recipient. The withdrawal transaction amount is calculated from the sum of verified contributions in that cycle.
 
 After applying the existing schema and Paystack SQL, run `supabase/migrations/20261113_member_contribution_levels.sql` in the Supabase SQL Editor. Existing members will be asked to choose a level before they can access their member dashboard or make a deposit.
+
+
+## Member referrals
+
+The member dashboard includes `/dashboard/referrals`, where each member can copy or share a unique referral URL and see the accounts registered through it. Referral codes are generated for existing members and assigned to new members automatically. A new signup is attributed when it uses the `?ref=CODE` query parameter. The current feature tracks referrals only; it does not pay cash rewards or modify contribution and withdrawal amounts.
+
+Before enabling this feature in an existing Supabase project, apply `supabase/migrations/20261114_member_referrals.sql` after the contribution-level migration. The migration backfills referral codes, records the referring member during signup, and adds a secure RPC for showing referral details without exposing referred members' bank information.

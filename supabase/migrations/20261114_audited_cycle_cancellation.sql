@@ -25,6 +25,24 @@ declare
   c public.contributions%rowtype;
   cycle_state text;
 begin
+  select cycle_id into c.cycle_id
+  from public.contributions
+  where payment_reference = p_payment_reference;
+
+  if not found then
+    raise exception 'Contribution payment reference not found';
+  end if;
+
+  -- Every payment/cancellation path locks the cycle before its contribution.
+  select status::text into cycle_state
+  from public.contribution_cycles
+  where id = c.cycle_id
+  for update;
+
+  if cycle_state is distinct from 'open' and cycle_state is distinct from 'collecting' then
+    raise exception 'This contribution cycle is no longer accepting payments.';
+  end if;
+
   select * into c
   from public.contributions
   where payment_reference = p_payment_reference
@@ -40,15 +58,6 @@ begin
 
   if c.status not in ('pending', 'submitted') then
     raise exception 'Contribution is not payable';
-  end if;
-
-  select status::text into cycle_state
-  from public.contribution_cycles
-  where id = c.cycle_id
-  for update;
-
-  if cycle_state is distinct from 'open' and cycle_state is distinct from 'collecting' then
-    raise exception 'This contribution cycle is no longer accepting payments.';
   end if;
 
   update public.contributions
@@ -72,6 +81,79 @@ begin
   return true;
 end;
 $function$;
+
+
+create or replace function public.prepare_contribution_payment(
+  p_cycle_id uuid,
+  p_member_id uuid,
+  p_payment_reference text
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+declare
+  cycle_row public.contribution_cycles%rowtype;
+  member_row public.profiles%rowtype;
+  contribution_row public.contributions%rowtype;
+begin
+  if p_payment_reference is null or length(p_payment_reference) < 8 then
+    raise exception 'A valid payment reference is required.';
+  end if;
+
+  select * into cycle_row
+  from public.contribution_cycles
+  where id = p_cycle_id
+  for update;
+
+  if not found or cycle_row.status::text not in ('open', 'collecting') then
+    raise exception 'This contribution cycle is not open for payment.';
+  end if;
+
+  select * into member_row
+  from public.profiles
+  where id = p_member_id and is_active = true;
+
+  if not found then
+    raise exception 'Your membership is not active.';
+  end if;
+
+  if member_row.group_id is null or member_row.group_id is distinct from cycle_row.group_id then
+    raise exception 'This cycle does not belong to your contribution circle.';
+  end if;
+
+  select * into contribution_row
+  from public.contributions
+  where cycle_id = p_cycle_id and member_id = p_member_id
+  for update;
+
+  if found then
+    if contribution_row.status = 'verified' then
+      raise exception 'Your contribution for this cycle is already confirmed.';
+    end if;
+    if contribution_row.status = 'cancelled' then
+      raise exception 'This contribution was cancelled and cannot be retried.';
+    end if;
+    update public.contributions
+    set amount = cycle_row.contribution_amount,
+        status = 'pending',
+        payment_reference = p_payment_reference
+    where id = contribution_row.id;
+  else
+    insert into public.contributions(cycle_id, member_id, amount, status, payment_reference)
+    values(p_cycle_id, p_member_id, cycle_row.contribution_amount, 'pending', p_payment_reference);
+  end if;
+
+  return jsonb_build_object('amount', cycle_row.contribution_amount);
+end;
+$function$;
+
+revoke all on function public.prepare_contribution_payment(uuid, uuid, text) from public, anon, authenticated;
+grant execute on function public.prepare_contribution_payment(uuid, uuid, text) to service_role;
+
+revoke all on function public.confirm_contribution_payment(text, text) from public, anon, authenticated;
+grant execute on function public.confirm_contribution_payment(text, text) to service_role;
 
 create or replace function public.admin_cancel_contribution_cycle(
   p_cycle_id uuid,
@@ -103,13 +185,7 @@ begin
     raise exception 'Enter a cancellation reason between 10 and 500 characters.';
   end if;
 
-  -- Lock contribution rows first, matching the payment-confirmation lock order.
-  perform 1
-  from public.contributions
-  where cycle_id = p_cycle_id
-  order by id
-  for update;
-
+  -- Lock the cycle first, matching payment initialization and confirmation.
   select * into cycle_row
   from public.contribution_cycles
   where id = p_cycle_id
@@ -118,6 +194,12 @@ begin
   if not found then
     raise exception 'Contribution cycle not found.';
   end if;
+
+  perform 1
+  from public.contributions
+  where cycle_id = p_cycle_id
+  order by id
+  for update;
 
   if cycle_row.status::text not in ('open', 'collecting') then
     raise exception 'Only an open or collecting cycle can be cancelled.';

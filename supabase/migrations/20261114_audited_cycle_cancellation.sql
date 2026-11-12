@@ -81,7 +81,7 @@ create or replace function public.admin_cancel_contribution_cycle(
 returns jsonb
 language plpgsql
 security definer
-set search_path = public
+set search_path = ''
 as $function$
 declare
   cycle_row public.contribution_cycles%rowtype;

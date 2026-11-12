@@ -142,6 +142,8 @@ declare
   current_profile public.profiles%rowtype;
   target_group public.group_settings%rowtype;
   next_position integer;
+  active_count integer;
+  group_available boolean := false;
 begin
   if uid is null then raise exception 'Authentication required'; end if;
   level_no := case p_amount
@@ -177,16 +179,26 @@ begin
     end if;
   end if;
 
-  select * into target_group
-  from public.group_settings g
-  where g.contribution_level = level_no
-    and g.group_status = 'active'
-    and (select count(*) from public.profiles p where p.group_id = g.id and p.is_active = true) < g.max_members
-  order by (select count(*) from public.profiles p where p.group_id = g.id and p.is_active = true), g.circle_number
-  limit 1
-  for update;
+  -- Lock each candidate circle, then count members in a fresh statement
+  -- snapshot. This prevents concurrent joins from exceeding the capacity.
+  for target_group in
+    select g.*
+    from public.group_settings g
+    where g.contribution_level = level_no and g.group_status = 'active'
+    order by g.circle_number
+    for update
+  loop
+    select count(*) into active_count
+    from public.profiles p
+    where p.group_id = target_group.id and p.is_active = true;
 
-  if target_group.id is null then
+    if active_count < target_group.max_members then
+      group_available := true;
+      exit;
+    end if;
+  end loop;
+
+  if not group_available then
     raise exception 'There is no available circle for this level. Please contact the administrator.';
   end if;
 
@@ -350,7 +362,9 @@ begin
   if not exists(select 1 from public.profiles where id=p_admin_id and role='admin') then raise exception 'Administrator access required'; end if;
   select * into g from public.group_settings where id=p_group_id for update;
   if not found then raise exception 'Contribution circle not found.'; end if;
-  if p_contribution_amount <= 0 or p_contribution_amount > 10000000 then raise exception 'Enter a valid contribution amount.'; end if;
+  if g.contribution_level is null or p_contribution_amount <> g.contribution_level * 10000 then
+    raise exception 'A circle must use the fixed contribution amount for its level.';
+  end if;
   if p_cycle_frequency not in ('weekly','biweekly','monthly','quarterly','yearly') then raise exception 'Select a valid contribution frequency.'; end if;
   if p_max_members not between 2 and 500 then raise exception 'Circle capacity must be between 2 and 500.'; end if;
   if p_group_status not in ('active','paused','completed') then raise exception 'Select a valid circle status.'; end if;
@@ -504,6 +518,7 @@ begin
 end;
 $$;
 
+revoke all on function public.request_current_withdrawal() from public, anon;
 grant execute on function public.request_current_withdrawal() to authenticated;
 
 -- Level assignment is now performed only by the guarded RPC, not direct profile updates.
@@ -529,9 +544,7 @@ declare
   g public.group_settings%rowtype;
   next_member public.profiles%rowtype;
   next_cycle_id uuid;
-  next_cycle_no integer;
-  due_on date;
-  next_label text;
+
 begin
   if auth.uid() is not null and auth.uid() <> p_admin_id then raise exception 'Administrator identity mismatch'; end if;
   if not exists(select 1 from public.profiles where id=p_admin_id and role='admin') then raise exception 'Administrator access required'; end if;
@@ -569,20 +582,8 @@ begin
 
     update public.group_settings set current_position=next_member.position_number,withdrawal_enabled=false where id=g.id;
 
-    select coalesce(max(cycle_number),0)+1 into next_cycle_no
-    from public.contribution_cycles where group_id=g.id;
-    due_on := coalesce(g.next_cycle_date,
-      case when g.cycle_frequency='weekly' then current_date+7
-           when g.cycle_frequency='biweekly' then current_date+14
-           when g.cycle_frequency='quarterly' then (current_date+interval '3 months')::date
-           when g.cycle_frequency='yearly' then (current_date+interval '1 year')::date
-           else (current_date+interval '1 month')::date end);
-    next_label := to_char(due_on,'FMMonth YYYY');
-
-    insert into public.contribution_cycles(group_id,cycle_number,month_label,contribution_amount,status,due_date,recipient_id)
-    values(g.id,next_cycle_no,next_label,g.contribution_amount,'open',due_on,next_member.id)
-    returning id into next_cycle_id;
-
+    -- The administrator opens the next cycle explicitly after the payout.
+    -- This creates a safe between-cycle window for members to change levels.
     insert into public.notifications(member_id,title,message)
     select id,'Circle rotation updated',
       'The payout for '||g.group_name||' was confirmed. The next recipient is '||

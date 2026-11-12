@@ -2,15 +2,17 @@
 -- Each group_settings row is an independent circle with its own roster,
 -- contribution cycle sequence, current recipient and withdrawal gate.
 
-do $$
+do $
 begin
-  if exists (select 1 from public.contribution_cycles where status in ('open','collecting')) then
-    raise exception 'Finish or close the currently open legacy contribution cycle before enabling level-specific circles.';
-  end if;
   if exists (select 1 from public.withdrawal_requests where status in ('pending','approved')) then
     raise exception 'Resolve pending or approved legacy withdrawals before enabling level-specific circles.';
   end if;
-end $$;
+end $;
+
+-- Any pre-existing open legacy cycle remains in the legacy pool (group_id NULL).
+-- It is not assigned to a new circle or silently cancelled. The payment API
+-- rejects cross-circle payments; administrators can review/cancel legacy cycles
+-- separately after checking provider settlement status.
 
 alter table public.group_settings
   add column if not exists contribution_level smallint,
@@ -44,7 +46,8 @@ set contribution_level = 1,
     circle_number = 1,
     group_name = 'Level 1 · Circle 1',
     contribution_amount = 10000,
-    current_position = 1,
+    -- Preserve the live legacy rotation position rather than resetting it.
+    current_position = current_position,
     max_members = greatest(max_members, 50),
     group_status = 'active'
 where id = (select id from public.group_settings order by created_at limit 1);

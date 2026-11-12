@@ -4,6 +4,11 @@
 alter table public.group_settings
  add column if not exists withdrawal_enabled boolean not null default false;
 
+-- Ensure the single-group application has a settings row to control.
+insert into public.group_settings(group_name)
+select 'Contribution Circle'
+where not exists (select 1 from public.group_settings);
+
 create or replace function public.request_current_withdrawal()
 returns uuid
 language plpgsql

@@ -12,6 +12,10 @@ alter table public.profiles
 comment on column public.profiles.contribution_level is
   'Member-selected recurring contribution amount in NGN. Applies to future cycles/payments.';
 
+-- The base schema revokes broad profile updates; grant only this additional
+-- self-service field while retaining the existing column-level bank controls.
+grant update(contribution_level) on public.profiles to authenticated;
+
 -- Withdrawal transactions represent the complete shared pool for that cycle,
 -- not the cycle's former single fixed contribution amount.
 create or replace function public.set_shared_pool_withdrawal_amount()

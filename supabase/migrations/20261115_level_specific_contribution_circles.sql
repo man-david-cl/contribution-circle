@@ -313,7 +313,7 @@ declare
   next_circle integer;
 begin
   if auth.uid() is not null and auth.uid() <> p_admin_id then raise exception 'Administrator identity mismatch'; end if;
-  if not exists(select 1 from public.profiles where id=p_admin_id and role='admin') then raise exception 'Administrator access required'; end if;
+  if not exists(select 1 from public.profiles where id=p_admin_id and role='admin' and is_active=true) then raise exception 'Administrator access required'; end if;
   if p_level not between 1 and 5 then raise exception 'Select a valid contribution level.'; end if;
   if p_max_members not between 2 and 500 then raise exception 'Circle capacity must be between 2 and 500.'; end if;
   if p_frequency not in ('weekly','biweekly','monthly','quarterly','yearly') then raise exception 'Select a valid contribution frequency.'; end if;
@@ -359,7 +359,7 @@ declare
   g public.group_settings%rowtype;
 begin
   if auth.uid() is not null and auth.uid() <> p_admin_id then raise exception 'Administrator identity mismatch'; end if;
-  if not exists(select 1 from public.profiles where id=p_admin_id and role='admin') then raise exception 'Administrator access required'; end if;
+  if not exists(select 1 from public.profiles where id=p_admin_id and role='admin' and is_active=true) then raise exception 'Administrator access required'; end if;
   select * into g from public.group_settings where id=p_group_id for update;
   if not found then raise exception 'Contribution circle not found.'; end if;
   if g.contribution_level is null or p_contribution_amount <> g.contribution_level * 10000 then
@@ -408,7 +408,7 @@ declare
   due_on date;
 begin
   if auth.uid() is not null and auth.uid() <> p_admin_id then raise exception 'Administrator identity mismatch'; end if;
-  if not exists(select 1 from public.profiles where id=p_admin_id and role='admin') then raise exception 'Administrator access required'; end if;
+  if not exists(select 1 from public.profiles where id=p_admin_id and role='admin' and is_active=true) then raise exception 'Administrator access required'; end if;
 
   select * into g from public.group_settings where id=p_group_id for update;
   if not found then raise exception 'Contribution circle not found.'; end if;
@@ -464,7 +464,7 @@ set search_path = public
 as $$
 begin
   if auth.uid() is not null and auth.uid() <> p_admin_id then raise exception 'Administrator identity mismatch'; end if;
-  if not exists(select 1 from public.profiles where id=p_admin_id and role='admin') then raise exception 'Administrator access required'; end if;
+  if not exists(select 1 from public.profiles where id=p_admin_id and role='admin' and is_active=true) then raise exception 'Administrator access required'; end if;
   if not exists(select 1 from public.group_settings where id=p_group_id) then raise exception 'Contribution circle not found.'; end if;
   if p_enabled and not exists(
     select 1 from public.contribution_cycles c
@@ -547,7 +547,7 @@ declare
 
 begin
   if auth.uid() is not null and auth.uid() <> p_admin_id then raise exception 'Administrator identity mismatch'; end if;
-  if not exists(select 1 from public.profiles where id=p_admin_id and role='admin') then raise exception 'Administrator access required'; end if;
+  if not exists(select 1 from public.profiles where id=p_admin_id and role='admin' and is_active=true) then raise exception 'Administrator access required'; end if;
   select * into r from public.withdrawal_requests where id=p_request_id for update;
   if not found then raise exception 'Withdrawal request not found'; end if;
   select * into cycle_row from public.contribution_cycles where id=r.cycle_id for update;

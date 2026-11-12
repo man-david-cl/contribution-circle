@@ -76,7 +76,7 @@ select 1, to_char(current_date, 'FMMonth YYYY'), contribution_amount, 'collectin
 from public.group_settings limit 1;
 ```
 
-For each new cycle, an administrator should create the next `contribution_cycles` row and set the recipient to the current position. The rotation RPC advances `group_settings.current_position` after a paid withdrawal; it does not automatically create the next month's cycle.
+The administrator dashboard can open the initial cycle. After an approved withdrawal is confirmed paid, the rotation RPC advances to the next eligible member and creates or assigns the next open cycle automatically.
 
 ## 4. Run the app
 
@@ -95,11 +95,11 @@ Routes:
 
 ## 5. How the withdrawal process works
 
-1. The current recipient sees their details and the **Request withdrawal** button.
-2. The button calls the `request_current_withdrawal()` database function. The function checks the logged-in user is the current eligible recipient and prevents a duplicate open request for that cycle.
-3. An administrator opens `/admin` and approves or rejects the request.
-4. After independently verifying that the transfer really reached the recipient, the admin selects **Confirm paid**.
-5. The database transaction marks the request paid, writes a transaction and audit record, completes the cycle, advances the active position, and notifies members. The position only advances at this last step.
+1. The current recipient sees their name/position and the **Withdraw** button only after the administrator enables access for that turn.
+2. The button calls `request_current_withdrawal()`, which checks the authenticated user is the active recipient and that the administrator has enabled withdrawal access.
+3. The administrator opens `/admin`, checks the recipient's bank details, and approves or rejects the request.
+4. After independently verifying that the transfer reached the recipient, the admin selects **Confirm paid**.
+5. The database records the withdrawal and audit event, completes the cycle, advances to the next eligible member, creates or assigns the next open cycle, disables withdrawal access for the new turn, and notifies members.
 
 ## 6. Deploy to Vercel
 

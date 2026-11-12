@@ -2,12 +2,12 @@
 -- Each group_settings row is an independent circle with its own roster,
 -- contribution cycle sequence, current recipient and withdrawal gate.
 
-do $
+do $$
 begin
   if exists (select 1 from public.withdrawal_requests where status in ('pending','approved')) then
     raise exception 'Resolve pending or approved legacy withdrawals before enabling level-specific circles.';
   end if;
-end $;
+end $$;
 
 -- Any pre-existing open legacy cycle remains in the legacy pool (group_id NULL).
 -- It is not assigned to a new circle or silently cancelled. The payment API

@@ -116,7 +116,7 @@ Routes:
 - Restrict who can access the Supabase dashboard and Vercel project.
 - Set up database backups and review audit logs.
 - Test RLS with at least two member accounts and one admin account.
-- The current-recipient RPC is the intended way to reveal the active recipient's bank details; member profile reads are restricted to the member and admins.
+- Member dashboards use a public recipient lookup that exposes only the recipient's name and position. The administrator-only recipient RPC exposes bank and phone details; member profile reads remain restricted.
 - Review the SQL policies and have a qualified engineer audit the database and API before handling real financial activity.
 - Do not store or request online banking passwords, card PINs, OTPs, or card security codes.
 
@@ -154,3 +154,23 @@ The `feature/paystack-contributions` branch adds Paystack Checkout for active co
 ### Before going live
 
 Test successful, cancelled, failed, repeated-webhook, mismatched-amount, and already-paid cases using Paystack test mode. Confirm that the matching contribution changes to `verified` and one `transactions` row is created. Configure the production secret only after test-mode verification and have the payment/database flow reviewed before accepting real contributions.
+
+
+## 9. Restored administrator rotation controls
+
+The redesigned administrator dashboard retains the original group-management workflow alongside the newer payment analytics. It includes the current recipient's private bank details, the member/position register, group contribution amount, initial-cycle setup, and a per-turn withdrawal enable/disable control. Confirming an approved withdrawal as paid advances to the next eligible member, creates or assigns the next open cycle, and disables withdrawal access until the administrator enables it for the new recipient.
+
+### Apply the restored Supabase migrations
+
+After the original `supabase/schema.sql` and the Paystack migration, run these files in the Supabase SQL Editor in this order:
+
+1. `supabase/migrations/20261111_admin_withdrawal_controls.sql`
+2. `supabase/migrations/20261111_member_privacy_per_turn_withdrawal.sql`
+3. `supabase/migrations/20261111_auto_next_contribution_cycle.sql`
+4. `supabase/migrations/20261112_admin_group_contribution_amount.sql`
+5. `supabase/migrations/20261112_admin_open_initial_cycle.sql`
+6. `supabase/migrations/20261112_admin_set_withdrawal_enabled.sql`
+
+These migrations add the withdrawal switch, secure member-visible recipient data, restore admin-only bank details, and install the automatic rotation and cycle setup functions. Do not skip the order: later migrations replace earlier withdrawal and admin RPC definitions.
+
+Once applied, open `/admin` and verify the recipient, bank details, member list, group amount, cycle state, and withdrawal switch before enabling withdrawals for a real group.

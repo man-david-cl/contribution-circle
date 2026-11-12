@@ -9,6 +9,15 @@ export const runtime = 'nodejs';
 const ALLOWED_LEVELS = [10000, 20000, 30000, 40000, 50000];
 
 export async function POST(request: Request) {
+  // Fail closed before creating a pending contribution record. The Paystack key
+  // is server-only and payment initialization stays unavailable until configured.
+  if (!process.env.PAYSTACK_SECRET_KEY) {
+    return NextResponse.json(
+      { error: 'Online payments are not configured yet. Please contact the administrator.' },
+      { status: 503 },
+    );
+  }
+
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();

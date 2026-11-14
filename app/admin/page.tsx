@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase-server';
 import { DashboardDataTable } from '@/components/dashboard-data-table';
 import { GroupContributionSettings } from '@/components/group-contribution-settings';
 import { AdminCycleManager } from '@/components/admin-cycle-manager';
+import { AdminMembersTable } from '@/components/admin-members-table';
 
 const money = (value: number) => new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', maximumFractionDigits: 0 }).format(value || 0);
 
@@ -57,14 +58,15 @@ export default async function Admin() {
         <div className="stats-grid admin-stats">
           <article className="card stat-card"><span className="stat-icon">♙</span><span className="stat-label">Registered members</span><strong>{membersResult.count ?? 0}</strong><small>All member accounts</small></article>
           <article className="card stat-card"><span className="stat-icon">✓</span><span className="stat-label">Active members</span><strong>{activeResult.count ?? 0}</strong><small>Currently active</small></article>
-          <article className="card stat-card"><span className="stat-icon">₦</span><span className="stat-label">Total received</span><strong>{money(received)}</strong><small>Verified contribution transactions</small></article>
+          <article className="card stat-card"><span className="stat-icon">₦</span><span className="stat-label">Total received</span><strong>{money(received)}</strong><small>Recent 1,000 contribution transactions</small></article>
           <article className="card stat-card"><span className="stat-icon">◷</span><span className="stat-label">Pending contributions</span><strong>{pendingPayments}</strong><small>Awaiting payment confirmation</small></article>
           <article className="card stat-card"><span className="stat-icon">↗</span><span className="stat-label">Pending withdrawals</span><strong>{pendingWithdrawals}</strong><small>Require administrator review</small></article>
         </div>
         <section id="group-setup"><GroupContributionSettings groups={groups} members={members} /></section>
         <AdminCycleManager cycles={cycles} />
-        <section id="members" className="card dashboard-section"><div className="section-heading"><div><h2>All registered members</h2><p>Members are numbered independently inside their selected contribution circle.</p></div><span className="section-count">{members.length} members</span></div>
-          <div className="table-wrap"><table className="dashboard-table"><thead><tr><th>Member</th><th>Level / circle</th><th>Number</th><th>Contribution</th><th>Status</th><th>Bank</th><th>Account name</th><th>Account number</th><th>Phone</th></tr></thead><tbody>{members.length ? members.map(m => { const group = groups.find(g => g.id === m.group_id); return <tr key={m.id}><td>{m.full_name || 'Member'}</td><td>{group ? group.group_name : 'Not assigned'}</td><td>{m.position_number ? '#' + String(m.position_number).padStart(3, '0') : '—'}</td><td>{group ? money(Number(group.contribution_amount)) : m.contribution_level ? money(Number(m.contribution_level)) : 'Not selected'}</td><td><span className="pill">{m.is_active ? 'Active' : 'Inactive'}</span></td><td>{m.bank_name || '—'}</td><td>{m.bank_account_name || '—'}</td><td>{m.bank_account_number || '—'}</td><td>{m.phone || '—'}</td></tr>; }) : <tr><td colSpan={9} className="table-empty">No registered members yet.</td></tr>}</tbody></table></div>
+        <section id="members" className="card dashboard-section"><div className="section-heading"><div><h2>All registered members</h2><p>Search members and filter by contribution level or account status. Bank account numbers are masked by default.</p></div><span className="section-count">{members.length} loaded</span></div>
+          <AdminMembersTable members={members} groups={groups} />
+          {members.length===500 && <p className="muted admin-data-note">Showing the first 500 members. Use the search and filters within this loaded set.</p>}
         </section>
         <section id="requests" className="card dashboard-section"><div className="section-heading"><div><h2>Withdrawal requests</h2><p>Review each request. Confirm payment only after independently verifying the transfer.</p></div><span className="section-count">{pendingWithdrawals} pending</span></div><DashboardDataTable mode="withdrawals" rows={withdrawalRows} searchPlaceholder="Search members or request IDs" emptyMessage="There are no withdrawal requests yet."/></section>
         <section id="contributions" className="card dashboard-section"><div className="section-heading"><div><h2>Member contribution payments</h2><p>Monitor payment activity and Paystack verification status.</p></div><span className="section-count">{contributions.length} recent records</span></div><DashboardDataTable mode="payments" rows={paymentRows} searchPlaceholder="Search member, cycle or reference" emptyMessage="No member contribution payments yet."/></section>

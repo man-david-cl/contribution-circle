@@ -190,3 +190,59 @@ th { color: var(--muted); font-weight: 700; background: #fafcfb; }
 .field-label input:focus, .field-label select:focus {
   border-color: var(--green); box-shadow: 0 0 0 3px #176b5218;
 }
+
+
+/* Contribution level selection */
+.levels-page{width:min(1120px,calc(100% - 48px))}
+.levels-panel{width:100%;max-width:960px;margin:clamp(24px,5vw,56px) auto;padding:clamp(22px,4.5vw,44px)}
+.levels-panel h1{font-size:clamp(30px,4.5vw,48px);line-height:1.12;letter-spacing:-1.5px;margin:14px 0}
+.levels-intro{max-width:720px;font-size:clamp(14px,1.6vw,17px);line-height:1.7;margin:0}
+.levels-current-position{display:inline-flex;align-items:center;gap:12px;margin-top:18px;padding:10px 13px;border:1px solid var(--line);border-radius:12px;background:#f8fbf9}
+.levels-current-position span{font-size:12px;color:var(--muted)}
+.levels-current-position strong{font-size:14px;color:var(--green)}
+.level-picker{margin-top:28px}
+.level-picker-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:14px}
+.level-option{display:flex;flex-direction:column;align-items:stretch;min-width:0;min-height:158px;padding:18px;text-align:left;border:1px solid #dce5df;border-radius:17px;background:#fff;color:var(--ink);cursor:pointer;transition:border-color .18s ease,background .18s ease,box-shadow .18s ease}
+.level-option:hover{border-color:#86b8a0;box-shadow:0 8px 22px #123f320d}
+.level-option.is-selected{border:2px solid var(--green);padding:17px;background:#edf6f0;box-shadow:0 0 0 3px #176b5210}
+.level-option-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.level-check{display:grid;place-items:center;width:24px;height:24px;flex:0 0 24px;border-radius:50%;background:var(--green);color:#fff;font-size:14px;font-weight:800}
+.level-price{display:block;margin:18px 0 9px;font-size:clamp(20px,2.3vw,26px);letter-spacing:-.6px;overflow-wrap:anywhere}
+.level-option-note{display:block;color:var(--muted);font-size:12px;line-height:1.5}
+.level-current-tag{align-self:flex-start;margin-top:10px;padding:5px 8px;border-radius:99px;background:#dcefe3;color:var(--green);font-size:10px;font-weight:800}
+.level-change-note{margin-top:22px;padding:16px 17px;border:1px solid #e2ece5;border-radius:14px;background:#f8fbf9}
+.level-change-note strong{font-size:13px;color:var(--green-dark)}
+.level-change-note p{margin:6px 0 0;color:var(--muted);font-size:12px;line-height:1.65}
+.level-picker-footer{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:20px}
+.level-selection-summary{font-size:12px;line-height:1.5;margin:0}
+.level-continue{min-width:210px}
+.btn:disabled{opacity:.55;cursor:not-allowed;transform:none;box-shadow:none}
+.level-confirm{margin-top:18px;padding:19px;border:1px solid #cfe2d6;border-radius:15px;background:#f7fbf8}
+.level-confirm h3{margin:0 0 14px;font-size:17px}
+.level-confirm-values{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.level-confirm-values>div{display:grid;gap:6px;padding:12px;border-radius:11px;background:#fff;border:1px solid var(--line)}
+.level-confirm-values span{font-size:11px;color:var(--muted)}
+.level-confirm-values strong{font-size:17px;overflow-wrap:anywhere}
+.level-confirm>p{font-size:12px;line-height:1.6;color:var(--muted)}
+.level-confirm-actions{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:10px}
+.level-error{padding:11px 13px;border-radius:10px;background:#fff0ee;color:#a52d24;font-size:13px}
+@media(max-width:600px){
+  .levels-page{width:calc(100% - 28px)}
+  .levels-panel{margin:18px auto 28px;padding:22px 18px;border-radius:17px}
+  .levels-panel h1{font-size:clamp(29px,8vw,38px);letter-spacing:-1px}
+  .level-picker{margin-top:22px}
+  .level-picker-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .level-option{min-height:140px;padding:14px;border-radius:14px}
+  .level-option.is-selected{padding:13px}
+  .level-price{font-size:clamp(17px,4.8vw,23px);margin:15px 0 8px}
+  .level-option-note{font-size:11px}
+  .level-picker-footer{align-items:stretch;flex-direction:column}
+  .level-continue{width:100%;min-width:0}
+}
+@media(max-width:350px){
+  .level-picker-grid{grid-template-columns:minmax(0,1fr)}
+  .level-option{min-height:128px}
+  .level-confirm-values{grid-template-columns:minmax(0,1fr)}
+  .level-confirm-actions{display:grid;grid-template-columns:1fr}
+  .level-confirm-actions .btn{width:100%}
+}

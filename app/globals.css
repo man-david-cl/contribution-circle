@@ -190,3 +190,11 @@ th { color: var(--muted); font-weight: 700; background: #fafcfb; }
 .field-label input:focus, .field-label select:focus {
   border-color: var(--green); box-shadow: 0 0 0 3px #176b5218;
 }
+
+/* Admin member management controls */
+.admin-member-tools{display:grid;grid-template-columns:minmax(220px,1fr) minmax(130px,180px) minmax(130px,160px) auto auto;align-items:center;gap:10px;margin-bottom:13px}
+.admin-member-tools .table-search{width:100%}
+.admin-account-toggle{white-space:nowrap;min-height:42px;padding:9px 12px;font-size:11px}
+.admin-data-note{font-size:11px;margin:12px 0 0}
+@media(max-width:1050px){.admin-member-tools{grid-template-columns:minmax(0,1fr) minmax(130px,180px);}.admin-member-tools .table-search{grid-column:1/-1}.admin-account-toggle{justify-self:start}}
+@media(max-width:520px){.admin-member-tools{grid-template-columns:minmax(0,1fr);gap:8px}.admin-member-tools .table-search{grid-column:auto}.admin-member-tools .table-filter select{width:100%;max-width:none}.admin-account-toggle{width:100%}.admin-member-tools .table-count{justify-self:end}}
